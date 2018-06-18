@@ -1,8 +1,11 @@
 # KittyManga
 
 Are you tired of all the manga websites putting pages verticlly when all our screen are longer horizontally? 
+
 Are you tired of manga scrolling to the right even though most reads right to left?
+
 Are you tired of browsers bumpy scrolling causing you to lose the sentence while scrolling?
+
 This lightweight, portable, manga client fills every inch of your hard earned 34" ultrawide monitor and combines features like background prefetching, night mode, and bookmarks. 
 
 ## Controls
