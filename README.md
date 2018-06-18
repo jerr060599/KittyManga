@@ -8,7 +8,7 @@ This lightweight, portable, manga client fills every inch of your hard earned 34
 
 ## Contributing
 
-- me
+- Chi Cheng Hsu (me)
 
 ## Liscense
 This project is licensed under the MIT License. 
