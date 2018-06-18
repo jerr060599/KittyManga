@@ -21,6 +21,9 @@ Once the manga loads, click a chapter and begin viewing.
 - Nightmode: Night mode button. Toggles nightmode.
 - Read Direction: Read Direction button. Toggles left/right reading. 
 
+## Horizontal viewing experience
+![alt-text](Examples/Example0.JPG)
+
 ## Built with
 [Json.NET](https://www.newtonsoft.com/json) - Used for JSON parsing
 
