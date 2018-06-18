@@ -1,6 +1,6 @@
 # KittyManga
 
-Are you tired of all the manga websites putting pages verticlly when all our screen are longer horizontally? 
+Are you tired of all the manga websites laying out pages vertically when all our screen are longer horizontally? 
 
 Are you tired of manga scrolling to the right even though most reads right to left?
 
