@@ -1,0 +1,227 @@
+﻿<Window x:Class="KittyManga.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:KittyManga"
+        mc:Ignorable="d"
+        Title="Kitty Client" Height="800" Width="1200">
+    <Window.CommandBindings>
+        <CommandBinding Command="local:MainWindow.ToggleFullscreenCommand" Executed="ToggleFullscreen"/>
+    </Window.CommandBindings>
+    <Grid Background="#FF1E1E1E">
+        <Grid.Resources>
+            <Style TargetType="{x:Type Button}">
+                <Setter Property="Margin" Value="0,2,0,2"/>
+                <Setter Property="Background" Value="#26FFFFFF"/>
+                <Setter Property="Foreground" Value="White"/>
+                <Setter Property="BorderBrush" Value="Transparent"/>
+                <Setter Property="FontSize" Value="20"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Button}">
+                            <Border Background="{TemplateBinding Background}">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+                <Style.Triggers>
+                    <Trigger Property="IsMouseOver" Value="True">
+                        <Setter Property="Background" Value="DarkGoldenrod"/>
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
+        </Grid.Resources>
+
+        <TextBlock Name="ProgessText" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White" FontFamily="Segoe UI Semibold" FontStyle="Italic">Connecting...</TextBlock>
+
+        <Grid Name="DisplayPane">
+            <local:SmoothScrollViewer x:Name="DisplayScroll" PreviewMouseWheel="ScrollHorizontal" ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Hidden">
+                <Grid MaxHeight="{Binding Path=ViewportHeight, ElementName=DisplayScroll}" Margin="0">
+                    <WrapPanel Name="ImagePane"/>
+                    <Button Name="LeftButt" Click="LeftButtSlapped" Height="50" Width="50" HorizontalAlignment="Left" Visibility="Hidden">
+                        <Image Source="pack://application:,,,/Resources/rightArrow.png" Opacity="0.6" RenderTransformOrigin="0.5,0.5">
+                            <Image.RenderTransform>
+                                <TransformGroup>
+                                    <RotateTransform Angle="180"/>
+                                </TransformGroup>
+                            </Image.RenderTransform>
+                        </Image>
+                    </Button>
+                    <Button Name="RightButt" Click="RightButtSlapped" Height="50" Width="50" HorizontalAlignment="Right" Visibility="Hidden">
+                        <Image Source="pack://application:,,,/Resources/rightArrow.png" Opacity="0.6" RenderTransformOrigin="0.5,0.5"/>
+                    </Button>
+                </Grid>
+            </local:SmoothScrollViewer>
+            <Grid Name="ZoomBg" IsHitTestVisible="False" Background="#99000000" Visibility="Hidden">
+                <Image Name="ZoomImg">
+                    <Image.RenderTransform>
+                        <TransformGroup>
+                            <ScaleTransform ScaleY="2" ScaleX="2"/>
+                        </TransformGroup>
+                    </Image.RenderTransform>
+                </Image>
+            </Grid>
+            <Grid Name="BarTrigger" Height="150" Width="800" VerticalAlignment="Top" MouseDown="ZoomStart" Background="Transparent">
+                <Grid.Style>
+                    <Style TargetType="Grid">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsMouseOver, ElementName=BarTrigger}" Value="True">
+                                <DataTrigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Duration="0:0:0.200" To="1" Storyboard.TargetProperty="Opacity"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </DataTrigger.EnterActions>
+                                <DataTrigger.ExitActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Duration="0:0:0.200" To="0" Storyboard.TargetProperty="Opacity"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </DataTrigger.ExitActions>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Grid.Style>
+                <Grid Name="StatusBar" Margin="0,20,0,0" Background="Transparent" Height="30" Width="700" VerticalAlignment="Top">
+
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="3*"/>
+                        <ColumnDefinition Width="1.4*"/>
+                        <ColumnDefinition Width="2*"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid Grid.ColumnSpan="3">
+                        <Border Name="barMask" Background="#CC000000" Panel.ZIndex="-10" CornerRadius="10"/>
+                    </Grid>
+                    <Viewbox Margin="15,0,5,4" Grid.Column="0">
+                        <TextBlock Name="BarChName" Foreground="White">
+                    Cat, Ch.123 (Kittens)
+                        </TextBlock>
+                    </Viewbox>
+                    <Grid Grid.Column="1" Margin="5,0,5,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="1*"/>
+                            <ColumnDefinition Width="1*"/>
+                            <ColumnDefinition Width="1*"/>
+                            <ColumnDefinition Width="1*"/>
+                        </Grid.ColumnDefinitions>
+                        <Button Click="ToggleSearchPane" Grid.Column="0">
+                            <Image Margin="1" Source="pack://application:,,,/Resources/searchIconWhite.png" ToolTip="Search"/>
+                        </Button>
+                        <Button Click="ToggleReadDirection" Grid.Column="1">
+                            <Image Margin="4" Source="pack://application:,,,/Resources/flipIcon.png" ToolTip="Toggle Layout Direction"/>
+                        </Button>
+                        <Button Click="ToggleNightMode" Grid.Column="2">
+                            <Image Margin="2" Source="pack://application:,,,/Resources/lightIcon.png" ToolTip="Toggle Nightmode"/>
+                        </Button>
+                        <Button Command="local:MainWindow.ToggleFullscreenCommand" Grid.Column="3">
+                            <Image Margin="2" Source="pack://application:,,,/Resources/fullscreenIcon.png" ToolTip="Toggle Fullscreen (F11)"/>
+                        </Button>
+                    </Grid>
+                    <Viewbox Grid.Column="2" Margin="5,4,15,4" >
+                        <TextBlock Name="BarProgessText" Foreground="White" Text="Connecting..."></TextBlock>
+                    </Viewbox>
+                </Grid>
+            </Grid>
+        </Grid>
+
+        <ScrollViewer Name="SearchPane">
+            <Grid Background="#FF252526" Margin="80,0,80,0">
+
+                <Image Source="pack://application:,,,/Resources/shadow_side.png" Width="15" Stretch="Fill" HorizontalAlignment="Left" Margin="-15,0,0,0" Opacity="0.4"/>
+                <Image Source="pack://application:,,,/Resources/shadow_side.png" Width="15" Stretch="Fill" HorizontalAlignment="Right" Margin="0,0,-30,0" Opacity="0.4">
+                    <Image.RenderTransform>
+                        <ScaleTransform ScaleX="-1"/>
+                    </Image.RenderTransform>
+                </Image>
+
+                <Button Click="ToggleSearchPane" HorizontalAlignment="Right" VerticalAlignment="Top" Height="18" Width="18" Margin="10" Background="Transparent" Opacity="0.9">
+                    <Image Source="pack://application:,,,/Resources/closeIcon.png"/>
+                </Button>
+                <StackPanel>
+                    <Border Margin="20,60,20,5" Background="White" Height="30" CornerRadius="10" BorderThickness="1" BorderBrush="Gray">
+                        <Grid>
+                            <Border Name="mask" Background="White"  CornerRadius="10"/>
+                            <Grid>
+                                <Grid.OpacityMask>
+                                    <VisualBrush Visual="{Binding ElementName=mask}" />
+                                </Grid.OpacityMask>
+                                <TextBox Name="SearchBar" SpellCheck.IsEnabled="True" KeyDown="AsyncSearch" Background="Transparent" BorderBrush="Transparent" FontSize="20"/>
+                                <Image Margin="0,0,7,0" Source="pack://application:,,,/Resources/searchIcon.png" HorizontalAlignment="Right"/>
+                            </Grid>
+                        </Grid>
+                    </Border>
+                    <StackPanel Name="SugButtons" Margin="0,5,0,20">
+                        <Button Background="Transparent">Sug 5</Button>
+                        <Button Background="Transparent">Sug 4</Button>
+                        <Button Background="Transparent">Sug 3</Button>
+                        <Button Background="Transparent">Sug 2</Button>
+                        <Button Background="Transparent">Sug 1</Button>
+                    </StackPanel>
+                    <Grid Margin="20,0,15,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="1*" />
+                            <ColumnDefinition Width="3*" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <Grid Name="MangaCover" Visibility="Hidden">
+                                <Image/>
+
+                                <Image Source="pack://application:,,,/Resources/shadow_side.png" Stretch="Fill" Width="8" HorizontalAlignment="Left" Margin="-8, 0 ,0 ,0" Opacity="0.2"/>
+                                <Image Source="pack://application:,,,/Resources/shadow_side.png" Stretch="Fill" Width="8" HorizontalAlignment="Right" Margin="0, 0 ,-16 ,0" Opacity="0.2">
+                                    <Image.RenderTransform>
+                                        <TransformGroup>
+                                            <ScaleTransform ScaleX="-1"/>
+                                        </TransformGroup>
+                                    </Image.RenderTransform>
+                                </Image>
+                                <Image Source="pack://application:,,,/Resources/shadow_top.png" Stretch="Fill" Height="8"  Margin="0, 0 , 0 ,-16" VerticalAlignment="Bottom" Opacity="0.2">
+                                    <Image.RenderTransform>
+                                        <TransformGroup>
+                                            <ScaleTransform ScaleY="-1"/>
+                                        </TransformGroup>
+                                    </Image.RenderTransform>
+                                </Image>
+                                <Image Source="pack://application:,,,/Resources/shadow_top.png" Stretch="Fill" Height="8"  Margin="0, -8 , 0 ,0" VerticalAlignment="Top" Opacity="0.2">
+                                </Image>
+                                <Image Source="pack://application:,,,/Resources/shadow_corner.png" Stretch="Fill" Height="8" Width="8" Margin="0, 0 ,-16,-16" VerticalAlignment="Bottom"  HorizontalAlignment="Right" Opacity="0.2">
+                                    <Image.RenderTransform>
+                                        <TransformGroup>
+                                            <ScaleTransform ScaleY="-1" ScaleX="-1"/>
+                                        </TransformGroup>
+                                    </Image.RenderTransform>
+                                </Image>
+                                <Image Source="pack://application:,,,/Resources/shadow_corner.png" Stretch="Fill" Height="8" Width="8" Margin="-8, -8 ,0,0" VerticalAlignment="Top"  HorizontalAlignment="Left" Opacity="0.2">
+                                </Image>
+                                <Image Source="pack://application:,,,/Resources/shadow_corner.png" Stretch="Fill" Height="8" Width="8" Margin="-8, 0 ,0,-16" VerticalAlignment="Bottom"  HorizontalAlignment="Left" Opacity="0.2">
+                                    <Image.RenderTransform>
+                                        <TransformGroup>
+                                            <ScaleTransform ScaleY="-1" />
+                                        </TransformGroup>
+                                    </Image.RenderTransform>
+                                </Image>
+                                <Image Source="pack://application:,,,/Resources/shadow_corner.png" Stretch="Fill" Height="8" Width="8" Margin="0, -8 ,-16,0" VerticalAlignment="Top"  HorizontalAlignment="Right" Opacity="0.2">
+                                    <Image.RenderTransform>
+                                        <TransformGroup>
+                                            <ScaleTransform ScaleX="-1"/>
+                                        </TransformGroup>
+                                    </Image.RenderTransform>
+                                </Image>
+                            </Grid>
+                            <TextBlock Name="MangaInfo" Margin="0,30,0,0" Foreground="White" FontSize="18" TextWrapping="Wrap"></TextBlock>
+                        </StackPanel>
+                        <StackPanel Margin="20,0,0,0" Grid.Column="1">
+                            <TextBlock Name="MangaDesc" TextWrapping="Wrap"  Foreground="White" FontSize="24"></TextBlock>
+                            <Grid Name="ChGrid">
+                            </Grid>
+                        </StackPanel>
+                    </Grid>
+                    <TextBlock xml:space="preserve" Margin="0,40,0,40" Foreground="White" FontSize="14" FontFamily="Segoe UI Light" TextAlignment="Center">KittyManga created by Chi Cheng Hsu 2018, rev.11&#xa;Images pulled from MangaEden</TextBlock>
+                </StackPanel>
+            </Grid>
+        </ScrollViewer>
+    </Grid>
+</Window>
