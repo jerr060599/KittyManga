@@ -279,8 +279,8 @@ namespace KittyManga {
                 try {
                     using (Stream f = File.OpenRead(USER_DATA_FILE)) {
                         XElement ele = XElement.Load(f);
-                        bookmarks = ele.Descendants("root").Descendants("bookmarks").ToDictionary(x => (string)x.Attribute("key"), x => (int)x.Attribute("value"));
-                        recents = ele.Descendants("root").Descendants("recents").Select(x => (string)x.Attribute("m")).ToList();
+                        bookmarks = ele.Descendants("UserData").Descendants("bookmarks").ToDictionary(x => (string)x.Attribute("key"), x => (int)x.Attribute("value"));
+                        recents = ele.Descendants("UserData").Descendants("recents").Select(x => (string)x.Attribute("m")).ToList();
                     }
                 }
                 catch (Exception) { bookmarks = new Dictionary<string, int>(); }

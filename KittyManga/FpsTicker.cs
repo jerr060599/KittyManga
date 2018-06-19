@@ -66,7 +66,6 @@ namespace KittyManga {
                             else if (dt > 0)
                                 break;
                             Thread.Sleep(1); Thread.Yield();
-                            Thread.Sleep(1); Thread.Yield();
                         };
                     }
                 }
