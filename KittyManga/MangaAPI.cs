@@ -106,20 +106,6 @@ namespace KittyManga {
         }
 
         /// <summary>
-        /// A struct that contains info for downnloading multiple images with Download Images
-        /// </summary>
-        public struct DownloadOrder {
-            /// <summary>
-            /// The url to download from
-            /// </summary>
-            public string url;
-            /// <summary>
-            /// A id that specifies the index of the image in the return array
-            /// </summary>
-            public int id;
-        }
-
-        /// <summary>
         /// Fetches a chapter from mangaeden synchronously.
         /// </summary>
         /// <param name="chapterId">The string chapter id</param>
@@ -130,43 +116,41 @@ namespace KittyManga {
             using (WebClient client = new WebClient()) {
                 Chapter c = JsonConvert.DeserializeObject<Chapter>(client.DownloadString(API_BASE + $@"/chapter/{chapterId}/"));
 
-                Queue<DownloadOrder> q = new Queue<DownloadOrder>();
+                string[] urls = new string[c.images.Length];
                 for (int i = 0; i < c.images.Length; i++)
-                    q.Enqueue(new DownloadOrder() {
-                        url = API_IMG + (string)c.images[i][1],
-                        id = c.images.Length - i - 1
-                    });
+                    urls[c.images.Length - i - 1] = API_IMG + (string)c.images[i][1];
 
-                return DownloadImages(q, sender, numClient);
+                return DownloadImages(urls, sender, numClient);
             }
         }
 
         /// <summary>
-        /// Fetches multiple images simultaneously
+        /// Fetches multiple images through multiple connections simultaneously
         /// </summary>
-        /// <param name="q">A queue of DownloadOrders that contain where to download and where to put it</param>
+        /// <param name="urls">A list of urls to download from</param>
         /// <param name="sender">A background worker to report progress to</param>
         /// <param name="numClient">The number of simultaneous connections to make</param>
         /// <returns>The downloaded images</returns>
-        public BitmapImage[] DownloadImages(Queue<DownloadOrder> q, BackgroundWorker sender = null, int numThreads = 5) {
-            BitmapImage[] data = new BitmapImage[q.Count];
+        public BitmapImage[] DownloadImages(string[] urls, BackgroundWorker sender = null, int numThreads = 5) {
+            BitmapImage[] data = new BitmapImage[urls.Length];
             Thread[] threads = new Thread[numThreads];
-            int all = q.Count;
             int done = 0;
+            int next = 0;
             for (int i = 0; i < numThreads; i++) {
                 threads[i] = new Thread(() => {
                     using (WebClient tc = new WebClient()) {
                         while (true) {
-                            DownloadOrder order;
-                            lock (q) {
-                                if (q.Count == 0)
+                            int index;
+                            lock (urls) {
+                                if (next >= urls.Length)
                                     break;
-                                order = q.Dequeue();
+                                index = next;
+                                next++;
                             }
-                            data[order.id] = LoadImage(tc.DownloadData(order.url));
+                            data[index] = LoadImage(tc.DownloadData(urls[index]));
                             done++;
                             if (sender != null)
-                                sender.ReportProgress(all - done);
+                                sender.ReportProgress(urls.Length - done);
                         }
                     }
                 });
