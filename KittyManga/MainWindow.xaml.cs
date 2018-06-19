@@ -278,12 +278,20 @@ namespace KittyManga {
                 api.FetchManga(0);//Test fetch a manga to check for server connection
                 try {
                     using (Stream f = File.OpenRead(USER_DATA_FILE)) {
-                        XElement ele = XElement.Load(f);
-                        bookmarks = ele.Descendants("UserData").Descendants("bookmarks").ToDictionary(x => (string)x.Attribute("key"), x => (int)x.Attribute("value"));
-                        recents = ele.Descendants("UserData").Descendants("recents").Select(x => (string)x.Attribute("m")).ToList();
+                        XDocument doc = XDocument.Load(f);
+                        recents = doc.Descendants("UserData").Descendants("recents").Select(x => (string)x.Attribute("m")).ToList();
+                        bookmarks = doc.Descendants("UserData").Descendants("bookmarks").ToDictionary(x => {
+                            if (x.Attribute("k") == null)
+                                return "";
+                            return (string)x.Attribute("k");
+                        }, x => {
+                            if (x.Attribute("v") == null)
+                                return -1;
+                            return (int)x.Attribute("v");
+                        });
                     }
                 }
-                catch (Exception) { bookmarks = new Dictionary<string, int>(); }
+                catch (Exception) { bookmarks = new Dictionary<string, int>(); recents = new List<string>(); }
             };
             worker.RunWorkerCompleted += (sender, e) => { SearchPane.Visibility = DisplayPane.Visibility = Visibility.Visible; ProgressTip = "Idle"; };
             worker.RunWorkerAsync();
@@ -550,13 +558,10 @@ namespace KittyManga {
                 XElement root = new XElement("UserData");
                 XElement xElem = new XElement(
                         "bookmarks",
-                        bookmarks.Select(x => new XElement("bookmarks", new XAttribute("key", x.Key), new XAttribute("value", x.Value)))
+                        bookmarks.Select(x => { if (x.Key == "") return null; return new XElement("bookmarks", new XAttribute("k", x.Key), new XAttribute("v", x.Value)); })
                      );
                 root.Add(xElem);
-                xElem = new XElement(
-                        "recents",
-                        recents.Select(x => new XElement("recents", new XAttribute("m", x)))
-                     );
+                xElem = new XElement("recents", recents.Select(x => { if (x == null) return null; return new XElement("recents", new XAttribute("m", x)); }));
                 root.Add(xElem);
                 doc.Add(root);
                 doc.Save(USER_DATA_FILE);
