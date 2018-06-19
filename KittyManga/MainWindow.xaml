@@ -38,7 +38,7 @@
         <TextBlock Name="ProgessText" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White" FontFamily="Segoe UI Semibold" FontStyle="Italic">Connecting...</TextBlock>
 
         <Grid Name="DisplayPane">
-            <local:SmoothScrollViewer x:Name="DisplayScroll" PreviewMouseWheel="ScrollHorizontal" ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Hidden">
+            <local:SmoothScrollViewer x:Name="DisplayScroll">
                 <Grid MaxHeight="{Binding Path=ViewportHeight, ElementName=DisplayScroll}" Margin="0">
                     <WrapPanel Name="ImagePane"/>
                     <Button Name="LeftButt" Click="LeftButtSlapped" Height="50" Width="50" HorizontalAlignment="Left" Visibility="Hidden">

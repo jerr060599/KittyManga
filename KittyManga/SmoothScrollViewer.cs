@@ -24,6 +24,12 @@ namespace KittyManga {
             DependencyProperty.Register("Smoothness", typeof(double), typeof(SmoothScrollViewer), new FrameworkPropertyMetadata(0.3));
 
         /// <summary>
+        /// Invert mouse wheel direction?
+        /// </summary>
+        public static readonly DependencyProperty InvertMouseWheelProperty =
+            DependencyProperty.Register("InvertMouseWheel", typeof(bool), typeof(SmoothScrollViewer), new FrameworkPropertyMetadata(false));
+
+        /// <summary>
         /// The target scroll speed in pixels per second per mouse wheel delta
         /// </summary>
         public double ScrollSpeed {
@@ -37,6 +43,14 @@ namespace KittyManga {
         public double Smoothness {
             get { return (double)GetValue(SmoothnessProperty); }
             set { SetValue(SmoothnessProperty, value); }
+        }
+
+        /// <summary>
+        /// Invert mouse wheel direction?
+        /// </summary>
+        public bool InvertMouseWheel {
+            get { return (bool)GetValue(InvertMouseWheelProperty); }
+            set { SetValue(InvertMouseWheelProperty, value); }
         }
 
         double buffer = 0;
@@ -53,10 +67,16 @@ namespace KittyManga {
             PreviewKeyUp += OnPreviewKeyUp;
             Loaded += (s, e) => { ticker.Start(); };
             Unloaded += (s, e) => { ticker.Stop(); };
+            SetVerticalScrollBarVisibility(this, ScrollBarVisibility.Hidden);
+            SetHorizontalScrollBarVisibility(this, ScrollBarVisibility.Auto);
         }
 
         void OnPreviewMouseWheel(object sender, MouseWheelEventArgs args) {
-            buffer -= args.Delta * ScrollSpeed;
+            if (InvertMouseWheel)
+                buffer += args.Delta * ScrollSpeed;
+            else
+                buffer -= args.Delta * ScrollSpeed;
+
             deadline = Smoothness;
             args.Handled = true;
         }
@@ -64,14 +84,14 @@ namespace KittyManga {
         double constantScroll = 0;
         void OnPreviewKeyDown(object sender, KeyEventArgs args) {
             if (args.Key == Key.Right && constantScroll == 0) {
-                constantScroll = -ScrollSpeed / Smoothness * 100;
-                buffer -= ScrollSpeed * 100;
+                constantScroll = ScrollSpeed / Smoothness * 100;
+                buffer += ScrollSpeed * 100;
                 deadline = Smoothness;
                 args.Handled = true;
             }
             if (args.Key == Key.Left && constantScroll == 0) {
-                constantScroll = ScrollSpeed / Smoothness * 100;
-                buffer += ScrollSpeed * 100;
+                constantScroll = -ScrollSpeed / Smoothness * 100;
+                buffer -= ScrollSpeed * 100;
                 deadline = Smoothness;
                 args.Handled = true;
             }

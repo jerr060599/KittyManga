@@ -412,16 +412,6 @@ namespace KittyManga {
             }
         }
 
-        public void ScrollHorizontal(object sender, MouseWheelEventArgs args) {
-            if (sender is ScrollViewer) {
-                if (args.Delta > 0)
-                    for (int i = 0; i < args.Delta; i++) (sender as ScrollViewer).LineLeft();
-                else
-                    for (int i = 0; i < -args.Delta; i++) (sender as ScrollViewer).LineRight();
-                args.Handled = true;
-            }
-        }
-
         public void ToggleSearchPane(object sender, RoutedEventArgs e) {
             SearchPane.Visibility = SearchPane.Visibility == Visibility.Hidden ? Visibility.Visible : Visibility.Hidden;
         }
@@ -457,18 +447,16 @@ namespace KittyManga {
                 ImagePane.FlowDirection = value ? FlowDirection.LeftToRight : FlowDirection.RightToLeft;
                 DisplayScroll.ScrollToHorizontalOffset(DisplayScroll.ScrollableWidth - DisplayScroll.HorizontalOffset);
                 if (value) {
-                    DisplayScroll.ScrollSpeed = Math.Abs(DisplayScroll.ScrollSpeed);
                     LeftButt.Visibility = hasPrev ? Visibility.Visible : Visibility.Hidden;
                     RightButt.Visibility = hasNext ? Visibility.Visible : Visibility.Hidden;
-                    DisplayScroll.ScrollToLeftEnd();
+                    DisplayScroll.InvertMouseWheel = false;
                     LeftButt.ToolTip = "Prev";
                     RightButt.ToolTip = prefetchedData == null ? "Next (Fetching...)" : "Next";
                 }
                 else {
-                    DisplayScroll.ScrollSpeed = -Math.Abs(DisplayScroll.ScrollSpeed);
                     LeftButt.Visibility = hasNext ? Visibility.Visible : Visibility.Hidden;
                     RightButt.Visibility = hasPrev ? Visibility.Visible : Visibility.Hidden;
-                    DisplayScroll.ScrollToRightEnd();
+                    DisplayScroll.InvertMouseWheel = true;
                     RightButt.ToolTip = "Prev";
                     LeftButt.ToolTip = prefetchedData == null ? "Next (Fetching...)" : "Next";
                 }
