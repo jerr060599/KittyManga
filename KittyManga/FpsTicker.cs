@@ -59,7 +59,15 @@ namespace KittyManga {
                                 Application.Current.Dispatcher.Invoke(InvokeUpdate, System.Windows.Threading.DispatcherPriority.Normal, updateID);
                             }
                             catch (TaskCanceledException) { }
-                        while (Now - nextUpdate < 0) { Thread.Sleep(1); Thread.Yield(); };
+                        while (true) {
+                            double dt = Now - nextUpdate;
+                            if (Math.Abs(dt) > 100)
+                                nextUpdate = Now;//Fix cases where stopwatch may "jump" i.e. if system goes to sleep and wakes up
+                            else if (dt > 0)
+                                break;
+                            Thread.Sleep(1); Thread.Yield();
+                            Thread.Sleep(1); Thread.Yield();
+                        };
                     }
                 }
                 catch (ThreadAbortException) {

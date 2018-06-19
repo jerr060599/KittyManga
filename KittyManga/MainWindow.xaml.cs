@@ -26,11 +26,13 @@ namespace KittyManga {
     /// </summary>
     public partial class MainWindow : Window {
         public const int NUM_CH_COL = 5;
-        public const string BOOKMARK_FILE = "bookmarks.xml";
+        public const string USER_DATA_FILE = "UserData.xml";
         MangaAPI api = new MangaAPI();
         Thread searchThread = null, mangaFetchThread = null, mangaPrefetchThread = null;
 
         public static RoutedCommand ToggleFullscreenCommand = new RoutedCommand("ToggleFullscreenCommand", typeof(MainWindow), new InputGestureCollection() { new KeyGesture(Key.F11) });
+        public static RoutedCommand EscCommand = new RoutedCommand("EscCommand", typeof(MainWindow), new InputGestureCollection() { new KeyGesture(Key.Escape) });
+
 
         Manga curManga = null;
         int curChIndex = -1;
@@ -39,6 +41,7 @@ namespace KittyManga {
         bool hasPrev, hasNext;
 
         Dictionary<string, int> bookmarks;
+        List<string> recents = new List<string>();
         bool nightmode = false;
 
         public MainWindow() {
@@ -274,9 +277,10 @@ namespace KittyManga {
                 api.FetchIndex();
                 api.FetchManga(0);//Test fetch a manga to check for server connection
                 try {
-                    using (Stream f = File.OpenRead(BOOKMARK_FILE)) {
+                    using (Stream f = File.OpenRead(USER_DATA_FILE)) {
                         XElement ele = XElement.Load(f);
-                        bookmarks = ele.Descendants("bookmarks").ToDictionary(x => (string)x.Attribute("key"), x => (int)x.Attribute("value"));
+                        bookmarks = ele.Descendants("root").Descendants("bookmarks").ToDictionary(x => (string)x.Attribute("key"), x => (int)x.Attribute("value"));
+                        recents = ele.Descendants("root").Descendants("recents").Select(x => (string)x.Attribute("m")).ToList();
                     }
                 }
                 catch (Exception) { bookmarks = new Dictionary<string, int>(); }
@@ -477,6 +481,20 @@ namespace KittyManga {
             get { return nightmode; }
         }
 
+        public bool Fullscreen {
+            set {
+                if (value) {
+                    WindowStyle = WindowStyle.None;
+                    WindowState = WindowState.Maximized;
+                }
+                else {
+                    WindowStyle = WindowStyle.SingleBorderWindow;
+                    WindowState = WindowState.Normal;
+                }
+            }
+            get { return WindowStyle == WindowStyle.None; }
+        }
+
         public void ToggleNightMode(object sender, RoutedEventArgs e) {
             NightMode = !NightMode;
             AddUpdateAppSettings("NightMode", NightMode.ToString());
@@ -488,14 +506,14 @@ namespace KittyManga {
         }
 
         public void ToggleFullscreen(object sender, ExecutedRoutedEventArgs e) {
-            if (WindowStyle == WindowStyle.None) {
-                WindowStyle = WindowStyle.SingleBorderWindow;
-                WindowState = WindowState.Normal;
-            }
-            else {
-                WindowStyle = WindowStyle.None;
-                WindowState = WindowState.Maximized;
-            }
+            Fullscreen = !Fullscreen;
+        }
+
+        public void EscPressed(object sender, ExecutedRoutedEventArgs e) {
+            if (SearchPane.Visibility == Visibility.Visible)
+                SearchPane.Visibility = Visibility.Hidden;
+            else if (Fullscreen)
+                Fullscreen = false;
         }
 
         #endregion
@@ -518,7 +536,6 @@ namespace KittyManga {
                 var settings = configFile.AppSettings.Settings;
                 if (settings[key] == null)
                     settings.Add(key, value);
-
                 else
                     settings[key].Value = value;
                 configFile.Save(ConfigurationSaveMode.Modified);
@@ -528,11 +545,22 @@ namespace KittyManga {
         }
 
         public void OnExit(object sender, ExitEventArgs args) {
-            XElement xElem = new XElement(
-                    "bookmarks",
-                    bookmarks.Select(x => new XElement("bookmarks", new XAttribute("key", x.Key), new XAttribute("value", x.Value)))
-                 );
-            xElem.Save(BOOKMARK_FILE);
+            new Thread(() => {
+                XDocument doc = new XDocument();
+                XElement root = new XElement("UserData");
+                XElement xElem = new XElement(
+                        "bookmarks",
+                        bookmarks.Select(x => new XElement("bookmarks", new XAttribute("key", x.Key), new XAttribute("value", x.Value)))
+                     );
+                root.Add(xElem);
+                xElem = new XElement(
+                        "recents",
+                        recents.Select(x => new XElement("recents", new XAttribute("m", x)))
+                     );
+                root.Add(xElem);
+                doc.Add(root);
+                doc.Save(USER_DATA_FILE);
+            }).Start();
         }
 
         #endregion

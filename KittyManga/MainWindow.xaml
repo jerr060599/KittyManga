@@ -8,6 +8,7 @@
         Title="Kitty Client" Height="800" Width="1200">
     <Window.CommandBindings>
         <CommandBinding Command="local:MainWindow.ToggleFullscreenCommand" Executed="ToggleFullscreen"/>
+        <CommandBinding Command="local:MainWindow.EscCommand" Executed="EscPressed"/>
     </Window.CommandBindings>
     <Grid Background="#FF1E1E1E">
         <Grid.Resources>
@@ -128,7 +129,7 @@
             </Grid>
         </Grid>
 
-        <ScrollViewer Name="SearchPane">
+        <ScrollViewer Name="SearchPane" VerticalScrollBarVisibility="Auto">
             <Grid Background="#FF252526" Margin="80,0,80,0">
 
                 <Image Source="pack://application:,,,/Resources/shadow_side.png" Width="15" Stretch="Fill" HorizontalAlignment="Left" Margin="-15,0,0,0" Opacity="0.4"/>
