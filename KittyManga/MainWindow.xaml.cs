@@ -469,10 +469,10 @@ namespace KittyManga {
         public bool NightMode {
             set {
                 nightmode = value;
-                if (nightmode)
-                    DisplayScroll.Effect = new InvertEffect();
+                if (nightmode) 
+                    DisplayScroll.Effect = ZoomImg.Effect = new InvertEffect();
                 else
-                    DisplayScroll.Effect = null;
+                    DisplayScroll.Effect = ZoomImg.Effect = null;
             }
             get { return nightmode; }
         }
