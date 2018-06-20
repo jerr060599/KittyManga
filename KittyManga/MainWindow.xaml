@@ -163,7 +163,7 @@
                         <Button Background="Transparent" Visibility="Hidden"></Button>
                         <Button Background="Transparent" Visibility="Hidden"></Button>
                     </StackPanel>
-                    <Grid Name="MangaInfoPane" Margin="20,0,15,0">
+                    <Grid Name="MangaInfoPane" Margin="20,0,15,0" Visibility="Hidden" Height="0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="1*" />
                             <ColumnDefinition Width="3*" />
@@ -218,6 +218,9 @@
                             <TextBlock Name="MangaDesc" TextWrapping="Wrap"  Foreground="White" FontSize="24"></TextBlock>
                             <Grid Name="ChGrid">
                             </Grid>
+                            <Button Height="30" Click="HideMangaInfoPane" VerticalAlignment="Bottom" Margin="0,5,0,0">
+                                <Label Foreground="White">^Hide^</Label>
+                            </Button>
                         </StackPanel>
                     </Grid>
                     <StackPanel>
@@ -235,9 +238,14 @@
                             </Style>
                         </StackPanel.Resources>
                         <Label Foreground="White" FontSize="30" Margin="50,0,0,0">Recently Read</Label>
-                        <Grid Name="RecentsGrid" Margin="50,0,50,0"/>
-                        <Label Foreground="White" FontSize="30" Margin="50,0,0,0">Recently Updated</Label>
-                        <Grid Name="UpdatesGrid" Margin="50,0,50,0"/>
+                        <Grid Name="RecentsGrid" Margin="50,0,50,0" Background="Transparent" Cursor="Arrow"/>
+                        <WrapPanel>
+                            <Label Foreground="White" FontSize="30" Margin="50,0,0,0">Recently Updated</Label>
+                            <Button Background="Transparent" Height="20" Width="20" VerticalAlignment="Bottom" Margin="0,0,0,11" Click="AysncRefreshIndex">
+                                <Image Source="pack://application:,,,/Resources/refreshIcon.png"/>
+                            </Button>
+                        </WrapPanel>
+                        <Grid Name="UpdatesGrid" Margin="50,0,50,0" Background="Transparent" Cursor="Arrow"/>
                     </StackPanel>
                     <TextBlock xml:space="preserve" Margin="0,40,0,40" Foreground="White" FontSize="14" FontFamily="Segoe UI Light" TextAlignment="Center">KittyManga created by Chi Cheng Hsu 2018, rev.11&#xa;Images pulled from MangaEden</TextBlock>
                 </StackPanel>

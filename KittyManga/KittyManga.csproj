@@ -134,5 +134,8 @@
   <ItemGroup>
     <Resource Include="Resources\shadow_top.png" />
   </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Resources\refreshIcon.png" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

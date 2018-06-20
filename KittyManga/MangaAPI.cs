@@ -84,6 +84,7 @@ namespace KittyManga {
                 float s = (float)Math.Log(a.h + 1);
                 minHit = Math.Min(minHit, s);
                 maxHit = Math.Max(maxHit, s);
+                a.idHash = a.i.GetHashCode();
                 mainIndex.manga[i] = a;
             }
             for (int i = 0; i < mainIndex.manga.Length; i++)
@@ -227,8 +228,17 @@ namespace KittyManga {
         /// <param name="index">The index in the mainIndex</param>
         /// <returns>The manga</returns>
         public Manga FetchManga(int index) {
+            return FetchManga(mainIndex.manga[index].i);
+        }
+
+        /// <summary>
+        /// Fetches more detailed manga info synchronously.
+        /// </summary>
+        /// <param name="id">id</param>
+        /// <returns>The manga</returns>
+        public Manga FetchManga(string id) {
             using (WebClient client = new WebClient()) {
-                Manga m = JsonConvert.DeserializeObject<Manga>(client.DownloadString(API_BASE + $@"/manga/{mainIndex.manga[index].i}/"));
+                Manga m = JsonConvert.DeserializeObject<Manga>(client.DownloadString(API_BASE + $@"/manga/{id}/"));
                 m.title = System.Net.WebUtility.HtmlDecode(m.title);
                 m.alias = System.Net.WebUtility.HtmlDecode(m.alias);
                 m.description = System.Net.WebUtility.HtmlDecode(m.description);
@@ -236,7 +246,7 @@ namespace KittyManga {
                 for (int i = 0; i < m.chapters.Length; i++)
                     if (m.chapters[i][0] != null)
                         m.chapters[i][0] = float.Parse(m.chapters[i][0].ToString());
-                m.id = mainIndex.manga[index].i;
+                m.id = id;
                 return m;
             }
         }
@@ -357,6 +367,7 @@ namespace KittyManga {
         public int s;
         public string t;
         public float popWeight;
+        public int idHash;
     }
 
     public class Manga {

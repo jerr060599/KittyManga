@@ -32,7 +32,7 @@ namespace KittyManga {
 
         public const string USER_DATA_FILE = "UserData.xml";
         MangaAPI api = new MangaAPI();
-        Thread searchThread = null, mangaFetchThread = null, mangaPrefetchThread = null, fetchUpdateThread = null, fetchRecentThread = null;
+        Thread searchThread = null, fetchMangaThread = null, mangaPrefetchThread = null, fetchUpdateThread = null, fetchRecentThread = null;
 
         public static RoutedCommand ToggleFullscreenCommand = new RoutedCommand("ToggleFullscreenCommand", typeof(MainWindow), new InputGestureCollection() { new KeyGesture(Key.F11) });
         public static RoutedCommand EscCommand = new RoutedCommand("EscCommand", typeof(MainWindow), new InputGestureCollection() { new KeyGesture(Key.Escape) });
@@ -55,21 +55,25 @@ namespace KittyManga {
             //Init buttons for suggestions
             for (int i = 0; i < VisualTreeHelper.GetChildrenCount(SugButtons); i++) {
                 Button butt = (VisualTreeHelper.GetChild(SugButtons, i) as Button);
-                butt.Resources.Add("MangaIndex", -1);
+                butt.Resources.Add("MangaId", -1);
                 butt.Visibility = Visibility.Hidden;
                 butt.Click += (s, e) => {
                     for (int j = 0; j < VisualTreeHelper.GetChildrenCount(SugButtons); j++)
                         (VisualTreeHelper.GetChild(SugButtons, j) as Button).Background = Brushes.Transparent;
                     (s as Button).Background = Brushes.DarkGoldenrod;
-                    AsyncFetchManga((int)(s as Button).Resources["MangaIndex"]);
+                    AsyncFetchManga((string)(s as Button).Resources["MangaId"]);
                 };
             }
 
             //Add columns for grids
             for (int i = 0; i < NUM_CH_COL; i++)
                 ChGrid.ColumnDefinitions.Add(new ColumnDefinition());
-            for (int i = 0; i < NUM_RECENTS_COL; i++)
+            for (int i = 0; i < NUM_RECENTS_COL; i++) {
                 RecentsGrid.ColumnDefinitions.Add(new ColumnDefinition());
+                Grid g = BuildCoverButton();
+                Grid.SetColumn(g, i);
+                RecentsGrid.Children.Add(g);
+            }
 
             for (int i = 0; i < NUM_UPDATES_COL; i++)
                 UpdatesGrid.ColumnDefinitions.Add(new ColumnDefinition());
@@ -103,6 +107,7 @@ namespace KittyManga {
 
         string lastSearch = "";
         public void AsyncSearch(object s, KeyEventArgs args) {
+            if (api.mainIndex == null) return;
             if (args != null && args.Key != Key.Return)
                 return;
             if (s is DispatcherTimer && lastSearch == SearchBar.Text)
@@ -135,7 +140,7 @@ namespace KittyManga {
                     butt.Visibility = Visibility.Visible;
                     int index = sug[i].index;
                     butt.Content = $"{api[index].t} ({(sug[i].s * 100).ToString("0.#")}%)";
-                    butt.Resources["MangaIndex"] = index;
+                    butt.Resources["MangaId"] = api[index].i;
                 }
                 foreach (object obj in SugButtons.Children)
                     (obj as Button).Background = null;
@@ -145,7 +150,6 @@ namespace KittyManga {
             };
             worker.RunWorkerAsync(SearchBar.Text);
         }
-
 
         bool fetchingChapter = false;
         public void AsyncFetchChapter(Manga m, int chIndex) {
@@ -221,17 +225,18 @@ namespace KittyManga {
             public Manga m;
         }
 
-        public void AsyncFetchManga(int index) {
-            if (mangaFetchThread != null)
-                mangaFetchThread.Abort();
-            mangaFetchThread = null;
+        public void AsyncFetchManga(string id) {
+            if (api.mainIndex == null) return;
+            if (fetchMangaThread != null)
+                fetchMangaThread.Abort();
+            fetchMangaThread = null;
             BackgroundWorker worker = new BackgroundWorker();
             worker.WorkerReportsProgress = false;
             worker.DoWork += (sender, e) => {
                 try {
-                    mangaFetchThread = Thread.CurrentThread;
+                    fetchMangaThread = Thread.CurrentThread;
                     MangaImage r = new MangaImage();
-                    r.m = api.FetchManga(index);
+                    r.m = api.FetchManga(id);
                     if (r.m.image != null)
                         r.cover = api.FetchCover(r.m);
                     e.Result = r;
@@ -239,13 +244,13 @@ namespace KittyManga {
                 catch (ThreadAbortException) {
                     e.Cancel = true;
                     Thread.ResetAbort();
-                    mangaFetchThread = null;
+                    fetchMangaThread = null;
                 }
             };
             worker.RunWorkerCompleted += (sender, e) => {
                 if (e.Cancelled)
                     return;
-                mangaFetchThread = null;
+                fetchMangaThread = null;
                 MangaImage r = e.Result as MangaImage;
                 MangaDesc.Text = r.m.description;
                 MangaCover.Visibility = r.cover == null ? Visibility.Hidden : Visibility.Visible;
@@ -283,6 +288,8 @@ namespace KittyManga {
                 }
                 if (bookmarks.ContainsKey(r.m.id) && ChGrid.Children.Count > bookmarks[r.m.id].lastChapter)
                     (ChGrid.Children[bookmarks[r.m.id].lastChapter] as Button).Background = Brushes.DarkGoldenrod;
+                MangaInfoPane.Visibility = Visibility.Visible;
+                MangaInfoPane.Height = double.NaN;
             };
             worker.RunWorkerAsync();
         }
@@ -312,15 +319,88 @@ namespace KittyManga {
             worker.RunWorkerCompleted += (sender, e) => {
                 SearchPane.Visibility = DisplayPane.Visibility = Visibility.Visible; ProgressTip = "Idle";
                 AsyncFetchUpdates();
+                AsyncFetchRecents();
             };
             worker.RunWorkerAsync();
         }
 
         public void AsyncFetchRecents() {
-            new Thread(() => {
+            if (api.mainIndex == null) return;
+            if (fetchRecentThread != null) return;
+            fetchRecentThread = new Thread(() => {
+                Heap<MangaBookmark> heap = new Heap<MangaBookmark>((a, b) => a.lastRead.CompareTo(b.lastRead));
+                //Find most recently read mangas
+                foreach (var item in bookmarks) {
+                    if (item.Key == "") continue;
+                    if (heap.Count < NUM_RECENTS_COL)
+                        heap.Add(item.Value);
+                    else if (heap.Min.lastRead < item.Value.lastRead) {
+                        heap.RemoveMin();
+                        heap.Add(item.Value);
+                    }
+                }
+                //Search index for their image links by hash code
+                int i = 0;
+                foreach (var item in heap) {
+                    int hash = item.id.GetHashCode();
+                    MangaAddress a = new MangaAddress();
+                    bool found = false;
+                    string url = null;
+                    foreach (var o in api.mainIndex.manga)
+                        if (o.idHash == hash) {
+                            url = o.im;
+                            a = o;
+                            found = true;
+                            break;
+                        }
+                    if (!found)
+                        continue;
+                    BitmapImage cover = null;
+                    if (url != null)
+                        cover = api.DownloadImage(MangaAPI.API_IMG + url);
+                    Application.Current.Dispatcher.Invoke(() => {
+                        Grid g = RecentsGrid.Children[i] as Grid;
+                        if (g.Resources.Contains("i"))
+                            g.Resources["i"] = a.i;
+                        else
+                            g.Resources.Add("i", a.i);
+                        Image img = g.Children[0] as Image;
+                        img.Source = cover;
+                        ((g.Children[1] as Viewbox).Child as TextBlock).Text = a.t + $"\nRead {item.lastRead.ToLocalTime().ToString()}";
+                        g.Visibility = Visibility.Visible;
+                    });
+                    i++;
+                }
+                fetchRecentThread = null;
+            });
+            fetchRecentThread.Start();
+        }
 
-
-            }).Start();
+        public void AysncRefreshIndex(object s, RoutedEventArgs args) {
+            //Make sure nothing that needs mainIndex is using it
+            if (searchThread != null)
+                searchThread.Join();
+            if (fetchMangaThread != null)
+                fetchMangaThread.Join();
+            if (fetchUpdateThread != null)
+                fetchUpdateThread.Join();
+            if (fetchRecentThread != null)
+                fetchRecentThread.Join();
+            lock (this) {
+                if (api.mainIndex == null) return;
+                api.mainIndex = null;
+            }
+            BackgroundWorker worker = new BackgroundWorker();
+            worker.WorkerReportsProgress = false;
+            ProgressTip = "Refreshing";
+            worker.DoWork += (sender, e) => {
+                api.FetchIndex(false);
+            };
+            worker.RunWorkerCompleted += (sender, e) => {
+                ProgressTip = "Idle";
+                AsyncFetchUpdates();
+            };
+            worker.RunWorkerAsync();
         }
 
         public void AsyncFetchUpdates() {
@@ -335,9 +415,9 @@ namespace KittyManga {
                         Grid g = UpdatesGrid.Children[i] as Grid;
                         ((g.Children[0] as Image)).Source = cover;
                         if (g.Resources.Contains("i"))
-                            g.Resources["i"] = updated[i];
+                            g.Resources["i"] = api[updated[i]].i;
                         else
-                            g.Resources.Add("i", updated[i]);
+                            g.Resources.Add("i", api[updated[i]].i);
                         Viewbox box = (UpdatesGrid.Children[i] as Grid).Children[1] as Viewbox;
                         (box.Child as TextBlock).Text = api[i].t +
                                 "\nUpdated " + new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddSeconds((double)api[updated[i]].ld).ToLocalTime();
@@ -347,8 +427,6 @@ namespace KittyManga {
             });
             fetchUpdateThread.Start();
         }
-
-
 
         #endregion
 
@@ -418,9 +496,14 @@ namespace KittyManga {
             return g;
         }
 
+        public void HideMangaInfoPane(object sender, RoutedEventArgs args) {
+            MangaInfoPane.Visibility = Visibility.Hidden;
+            MangaInfoPane.Height = 0;
+        }
+
         public void OnCoverPress(object sender, MouseButtonEventArgs args) {
             if ((sender as FrameworkElement).Resources.Contains("i")) {
-                AsyncFetchManga((int)(sender as FrameworkElement).Resources["i"]);
+                AsyncFetchManga((string)(sender as FrameworkElement).Resources["i"]);
                 SearchPane.ScrollToTop();
             }
         }
@@ -484,7 +567,7 @@ namespace KittyManga {
 
             if (hasNext)
                 AsyncPrefetchChapter(m, chIndex + 1);
-
+            AsyncFetchRecents();
             GC.Collect();
         }
 
