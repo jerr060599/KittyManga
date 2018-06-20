@@ -424,6 +424,11 @@ namespace KittyManga {
                 LoadNext();
         }
 
+        public void ShowSearchPane(object sender, KeyEventArgs args) {
+            if (args.Key == Key.S)
+                SearchPane.Visibility = Visibility.Visible;
+        }
+
         public void RightButtSlapped(object sender, RoutedEventArgs e) {
             if (LeftToRight)
                 LoadNext();
@@ -469,7 +474,7 @@ namespace KittyManga {
         public bool NightMode {
             set {
                 nightmode = value;
-                if (nightmode) 
+                if (nightmode)
                     DisplayScroll.Effect = ZoomImg.Effect = new InvertEffect();
                 else
                     DisplayScroll.Effect = ZoomImg.Effect = null;

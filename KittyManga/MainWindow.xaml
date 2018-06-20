@@ -38,7 +38,7 @@
         <TextBlock Name="ProgessText" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White" FontFamily="Segoe UI Semibold" FontStyle="Italic">Connecting...</TextBlock>
 
         <Grid Name="DisplayPane">
-            <local:SmoothScrollViewer x:Name="DisplayScroll">
+            <local:SmoothScrollViewer x:Name="DisplayScroll" KeyDown="ShowSearchPane">
                 <Grid MaxHeight="{Binding Path=ViewportHeight, ElementName=DisplayScroll}" Margin="0">
                     <WrapPanel Name="ImagePane"/>
                     <Button Name="LeftButt" Click="LeftButtSlapped" Height="50" Width="50" HorizontalAlignment="Left" Visibility="Hidden">
@@ -110,7 +110,7 @@
                             <ColumnDefinition Width="1*"/>
                         </Grid.ColumnDefinitions>
                         <Button Click="ToggleSearchPane" Grid.Column="0">
-                            <Image Margin="1" Source="pack://application:,,,/Resources/searchIconWhite.png" ToolTip="Search"/>
+                            <Image Margin="1" Source="pack://application:,,,/Resources/searchIconWhite.png" ToolTip="Search (S)"/>
                         </Button>
                         <Button Click="ToggleReadDirection" Grid.Column="1">
                             <Image Margin="4" Source="pack://application:,,,/Resources/flipIcon.png" ToolTip="Toggle Layout Direction"/>
