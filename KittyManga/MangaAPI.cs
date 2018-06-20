@@ -239,7 +239,7 @@ namespace KittyManga {
             public int index;
 
             public int CompareTo(MangaMatch other) {
-                return Math.Sign(other.s - s);
+                return Math.Sign(s - other.s);
             }
         }
 
@@ -253,7 +253,7 @@ namespace KittyManga {
             if (mainIndex == null)
                 FetchIndex();
             term = term.ToLower();
-            List<MangaMatch> heap = new List<MangaMatch>();
+            Heap<MangaMatch> heap = new Heap<MangaMatch>((a, b) => a.CompareTo(b));
             for (int i = 0; i < mainIndex.manga.Length; i++) {
                 MangaAddress a = mainIndex.manga[i];
                 float score = 1f - Math.Min(EditDist(a.t.ToLower(), term) / (float)(term.Length + a.t.Length),
@@ -261,15 +261,13 @@ namespace KittyManga {
                 score = (float)Math.Pow(score, 1 / (1 + a.popWeight));
                 if (heap.Count < top) {
                     heap.Add(new MangaMatch() { s = score, index = i });
-                    heap.Sort();
                 }
-                else if (heap.Last().s < score) {
-                    heap[heap.Count - 1].s = score;
-                    heap[heap.Count - 1].index = i;
-                    heap.Sort();
+                else if (heap.Min.s < score) {
+                    heap.RemoveMin();
+                    heap.Add(new MangaMatch() { s = score, index = i });
                 }
             }
-            return heap;
+            return heap.ToList();
         }
 
         int[,] dpMat = new int[400, 400];

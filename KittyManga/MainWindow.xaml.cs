@@ -293,7 +293,9 @@ namespace KittyManga {
                 }
                 catch (Exception) { bookmarks = new Dictionary<string, int>(); recents = new List<string>(); }
             };
-            worker.RunWorkerCompleted += (sender, e) => { SearchPane.Visibility = DisplayPane.Visibility = Visibility.Visible; ProgressTip = "Idle"; };
+            worker.RunWorkerCompleted += (sender, e) => {
+                SearchPane.Visibility = DisplayPane.Visibility = Visibility.Visible; ProgressTip = "Idle";
+            };
             worker.RunWorkerAsync();
         }
 
