@@ -378,18 +378,12 @@ namespace KittyManga {
 
         public void AysncRefreshIndex(object s, RoutedEventArgs args) {
             //Make sure nothing that needs mainIndex is using it
-            if (searchThread != null)
-                searchThread.Join();
-            if (fetchMangaThread != null)
-                fetchMangaThread.Join();
-            if (fetchUpdateThread != null)
-                fetchUpdateThread.Join();
-            if (fetchRecentThread != null)
-                fetchRecentThread.Join();
-            lock (this) {
-                if (api.mainIndex == null) return;
-                api.mainIndex = null;
-            }
+            if (searchThread != null) return;
+            if (fetchMangaThread != null) return;
+            if (fetchUpdateThread != null) return;
+            if (fetchRecentThread != null) return;
+            if (api.mainIndex == null) return;
+            api.mainIndex = null;
             BackgroundWorker worker = new BackgroundWorker();
             worker.WorkerReportsProgress = false;
             ProgressTip = "Refreshing";
