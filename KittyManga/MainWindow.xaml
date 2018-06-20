@@ -241,7 +241,7 @@
                         <Grid Name="RecentsGrid" Margin="50,0,50,0" Background="Transparent" Cursor="Arrow"/>
                         <WrapPanel>
                             <Label Foreground="White" FontSize="30" Margin="50,0,0,0">Recently Updated</Label>
-                            <Button Background="Transparent" Height="20" Width="20" VerticalAlignment="Bottom" Margin="0,0,0,11" Click="AysncRefreshIndex">
+                            <Button Name="refreshButt" Background="Transparent" Height="20" Width="20" VerticalAlignment="Bottom" Margin="0,0,0,11" Click="AysncRefreshIndex">
                                 <Image Source="pack://application:,,,/Resources/refreshIcon.png"/>
                             </Button>
                         </WrapPanel>

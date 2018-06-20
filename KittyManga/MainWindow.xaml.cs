@@ -384,6 +384,7 @@ namespace KittyManga {
             if (fetchRecentThread != null) return;
             if (api.mainIndex == null) return;
             api.mainIndex = null;
+            refreshButt.Visibility = Visibility.Hidden;
             BackgroundWorker worker = new BackgroundWorker();
             worker.WorkerReportsProgress = false;
             ProgressTip = "Refreshing";
@@ -418,6 +419,7 @@ namespace KittyManga {
                     });
                 }
                 fetchUpdateThread = null;
+                Application.Current.Dispatcher.Invoke(() => refreshButt.Visibility = Visibility.Visible);
             });
             fetchUpdateThread.Start();
         }
