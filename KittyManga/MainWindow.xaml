@@ -18,6 +18,7 @@
                 <Setter Property="Foreground" Value="White"/>
                 <Setter Property="BorderBrush" Value="Transparent"/>
                 <Setter Property="FontSize" Value="20"/>
+                <Setter Property="Cursor" Value="Hand"/>
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="{x:Type Button}">
@@ -156,13 +157,13 @@
                         </Grid>
                     </Border>
                     <StackPanel Name="SugButtons" Margin="0,5,0,20">
-                        <Button Background="Transparent">Sug 5</Button>
-                        <Button Background="Transparent">Sug 4</Button>
-                        <Button Background="Transparent">Sug 3</Button>
-                        <Button Background="Transparent">Sug 2</Button>
-                        <Button Background="Transparent">Sug 1</Button>
+                        <Button Background="Transparent" Visibility="Hidden"></Button>
+                        <Button Background="Transparent" Visibility="Hidden"></Button>
+                        <Button Background="Transparent" Visibility="Hidden"></Button>
+                        <Button Background="Transparent" Visibility="Hidden"></Button>
+                        <Button Background="Transparent" Visibility="Hidden"></Button>
                     </StackPanel>
-                    <Grid Margin="20,0,15,0">
+                    <Grid Name="MangaInfoPane" Margin="20,0,15,0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="1*" />
                             <ColumnDefinition Width="3*" />
@@ -170,7 +171,6 @@
                         <StackPanel Grid.Column="0">
                             <Grid Name="MangaCover" Visibility="Hidden">
                                 <Image/>
-
                                 <Image Source="pack://application:,,,/Resources/shadow_side.png" Stretch="Fill" Width="8" HorizontalAlignment="Left" Margin="-8, 0 ,0 ,0" Opacity="0.2"/>
                                 <Image Source="pack://application:,,,/Resources/shadow_side.png" Stretch="Fill" Width="8" HorizontalAlignment="Right" Margin="0, 0 ,-16 ,0" Opacity="0.2">
                                     <Image.RenderTransform>
@@ -220,6 +220,25 @@
                             </Grid>
                         </StackPanel>
                     </Grid>
+                    <StackPanel>
+                        <StackPanel.Resources>
+                            <Style TargetType="{x:Type Viewbox}">
+                                <Setter Property="VerticalAlignment" Value="Bottom"/>
+                            </Style>
+                            <Style TargetType="{x:Type Grid}">
+                                <Setter Property="Margin" Value="2"/>
+                                <Setter Property="Background" Value="#10FFFFFF"/>
+                                <Setter Property="Cursor" Value="Hand"/>
+                            </Style>
+                            <Style TargetType="{x:Type Image}">
+                                <Setter Property="Stretch" Value="Fill"/>
+                            </Style>
+                        </StackPanel.Resources>
+                        <Label Foreground="White" FontSize="30" Margin="50,0,0,0">Recently Read</Label>
+                        <Grid Name="RecentsGrid" Margin="50,0,50,0"/>
+                        <Label Foreground="White" FontSize="30" Margin="50,0,0,0">Recently Updated</Label>
+                        <Grid Name="UpdatesGrid" Margin="50,0,50,0"/>
+                    </StackPanel>
                     <TextBlock xml:space="preserve" Margin="0,40,0,40" Foreground="White" FontSize="14" FontFamily="Segoe UI Light" TextAlignment="Center">KittyManga created by Chi Cheng Hsu 2018, rev.11&#xa;Images pulled from MangaEden</TextBlock>
                 </StackPanel>
             </Grid>

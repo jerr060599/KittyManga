@@ -26,9 +26,13 @@ namespace KittyManga {
     /// </summary>
     public partial class MainWindow : Window {
         public const int NUM_CH_COL = 5;
+        public const int NUM_RECENTS_COL = 5;
+        public const int NUM_UPDATES_COL = 5;
+        public const int NUM_UPDATES_ROW = 8;
+
         public const string USER_DATA_FILE = "UserData.xml";
         MangaAPI api = new MangaAPI();
-        Thread searchThread = null, mangaFetchThread = null, mangaPrefetchThread = null;
+        Thread searchThread = null, mangaFetchThread = null, mangaPrefetchThread = null, fetchUpdateThread = null, fetchRecentThread = null;
 
         public static RoutedCommand ToggleFullscreenCommand = new RoutedCommand("ToggleFullscreenCommand", typeof(MainWindow), new InputGestureCollection() { new KeyGesture(Key.F11) });
         public static RoutedCommand EscCommand = new RoutedCommand("EscCommand", typeof(MainWindow), new InputGestureCollection() { new KeyGesture(Key.Escape) });
@@ -61,9 +65,24 @@ namespace KittyManga {
                 };
             }
 
-            //Add columns for chapters
+            //Add columns for grids
             for (int i = 0; i < NUM_CH_COL; i++)
                 ChGrid.ColumnDefinitions.Add(new ColumnDefinition());
+            for (int i = 0; i < NUM_RECENTS_COL; i++)
+                RecentsGrid.ColumnDefinitions.Add(new ColumnDefinition());
+
+            for (int i = 0; i < NUM_UPDATES_COL; i++)
+                UpdatesGrid.ColumnDefinitions.Add(new ColumnDefinition());
+            for (int i = 0; i < NUM_UPDATES_ROW; i++) {
+                UpdatesGrid.RowDefinitions.Add(new RowDefinition());
+                for (int j = 0; j < NUM_UPDATES_COL; j++) {
+                    Grid g = BuildCoverButton();
+                    Grid.SetRow(g, i);
+                    Grid.SetColumn(g, j);
+
+                    UpdatesGrid.Children.Add(g);
+                }
+            }
 
             //Start timers
             DispatcherTimer timer = new DispatcherTimer();
@@ -115,7 +134,7 @@ namespace KittyManga {
                     Button butt = (VisualTreeHelper.GetChild(SugButtons, i) as Button);
                     butt.Visibility = Visibility.Visible;
                     int index = sug[i].index;
-                    butt.Content = $"{api.mainIndex.manga[index].t} ({(sug[i].s * 100).ToString("0.#")}%)";
+                    butt.Content = $"{api[index].t} ({(sug[i].s * 100).ToString("0.#")}%)";
                     butt.Resources["MangaIndex"] = index;
                 }
                 foreach (object obj in SugButtons.Children)
@@ -272,8 +291,8 @@ namespace KittyManga {
             BackgroundWorker worker = new BackgroundWorker();
             worker.WorkerReportsProgress = false;
             worker.DoWork += (sender, e) => {
-                api.FetchIndex();
-                api.FetchManga(0);//Test fetch a manga to check for server connection
+                api.FetchIndex(true);
+                //api.FetchManga(0);//Test fetch a manga to check for server connection
                 try {
                     using (Stream f = File.OpenRead(USER_DATA_FILE)) {
                         XDocument doc = XDocument.Load(f);
@@ -292,9 +311,44 @@ namespace KittyManga {
             };
             worker.RunWorkerCompleted += (sender, e) => {
                 SearchPane.Visibility = DisplayPane.Visibility = Visibility.Visible; ProgressTip = "Idle";
+                AsyncFetchUpdates();
             };
             worker.RunWorkerAsync();
         }
+
+        public void AsyncFetchRecents() {
+            new Thread(() => {
+
+
+            }).Start();
+        }
+
+        public void AsyncFetchUpdates() {
+            if (fetchUpdateThread != null)
+                return;
+            fetchUpdateThread = new Thread(() => {
+                int[] updated = api.FetchUpdated(NUM_UPDATES_ROW * NUM_UPDATES_COL);
+                for (int i = 0; i < updated.Length; i++) {
+                    BitmapImage cover = api.FetchCover(updated[i]);
+                    Application.Current.Dispatcher.Invoke(() => {
+                        UpdatesGrid.Children[i].Visibility = Visibility.Visible;
+                        Grid g = UpdatesGrid.Children[i] as Grid;
+                        ((g.Children[0] as Image)).Source = cover;
+                        if (g.Resources.Contains("i"))
+                            g.Resources["i"] = updated[i];
+                        else
+                            g.Resources.Add("i", updated[i]);
+                        Viewbox box = (UpdatesGrid.Children[i] as Grid).Children[1] as Viewbox;
+                        (box.Child as TextBlock).Text = api[i].t +
+                                "\nUpdated " + new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddSeconds((double)api[updated[i]].ld).ToLocalTime();
+                    });
+                }
+                fetchUpdateThread = null;
+            });
+            fetchUpdateThread.Start();
+        }
+
+
 
         #endregion
 
@@ -342,6 +396,34 @@ namespace KittyManga {
         #endregion
 
         #region UI
+
+        public Grid BuildCoverButton() {
+            Grid g = new Grid();
+            g.MouseDown += OnCoverPress;
+
+            Image img = new Image();
+            g.Children.Add(img);
+
+            Viewbox box = new Viewbox();
+            box.IsHitTestVisible = img.IsHitTestVisible = false;
+            TextBlock b = new TextBlock();
+            b.Foreground = Brushes.White;
+            b.FontSize = 20;
+            b.VerticalAlignment = VerticalAlignment.Bottom;
+            b.Background = new SolidColorBrush(new Color() { A = 160 });
+            box.Child = b;
+            g.Children.Add(box);
+
+            g.Visibility = Visibility.Hidden;
+            return g;
+        }
+
+        public void OnCoverPress(object sender, MouseButtonEventArgs args) {
+            if ((sender as FrameworkElement).Resources.Contains("i")) {
+                AsyncFetchManga((int)(sender as FrameworkElement).Resources["i"]);
+                SearchPane.ScrollToTop();
+            }
+        }
 
         public void LoadChapterFromData(BitmapImage[] data, Manga m, int chIndex) {
             prefetchedData = null;

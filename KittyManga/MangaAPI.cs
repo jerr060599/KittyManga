@@ -20,6 +20,10 @@ namespace KittyManga {
         /// </summary>
         public string INDEX_FILE = @"MangaIndex.txt";
 
+        public MangaAddress this[int i] {
+            get { return mainIndex.manga[i]; }
+        }
+
         /// <summary>
         /// The main index containing overview info for every manga availible
         /// </summary>
@@ -93,6 +97,16 @@ namespace KittyManga {
         /// <returns>The downloaded image</returns>
         public BitmapImage FetchCover(Manga m) {
             return DownloadImage(API_IMG + (string)m.image);
+        }
+
+        /// <summary>
+        /// Fetches the cover of a manga synchronously.
+        /// </summary>
+        /// <param name="i">The indxe of the manga</param>
+        /// <returns>The downloaded image</returns>
+        public BitmapImage FetchCover(int i) {
+            if (mainIndex.manga[i].im == null) return null;
+            return DownloadImage(API_IMG + (string)mainIndex.manga[i].im);
         }
 
         /// <summary>
@@ -278,7 +292,7 @@ namespace KittyManga {
         /// <param name="top">The number to return</param>
         /// <returns>The most recent mangas</returns>
         public int[] FetchUpdated(int top = 10) {
-            var heap = new Heap<KeyValuePair<int, double>>((a, b) => a.Value.CompareTo(b));
+            var heap = new Heap<KeyValuePair<int, double>>((a, b) => a.Value.CompareTo(b.Value));
             for (int i = 0; i < mainIndex.manga.Length; i++) {
                 if (mainIndex.manga[i].ld == null)
                     continue;
