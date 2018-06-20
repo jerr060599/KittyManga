@@ -73,15 +73,17 @@ namespace KittyManga {
         /// </summary>
         private void ProcessIndex() {
             float minHit = float.MaxValue, maxHit = float.MinValue;
-            foreach (MangaAddress a in mainIndex.manga) {
+            for (int i = 0; i < mainIndex.manga.Length; i++) {
+                MangaAddress a = mainIndex.manga[i];
                 a.t = System.Net.WebUtility.HtmlDecode(a.t);
                 a.a = System.Net.WebUtility.HtmlDecode(a.a);
                 float s = (float)Math.Log(a.h + 1);
                 minHit = Math.Min(minHit, s);
                 maxHit = Math.Max(maxHit, s);
+                mainIndex.manga[i] = a;
             }
-            foreach (MangaAddress a in mainIndex.manga)
-                a.popWeight = (float)((Math.Log(a.h + 1) - minHit) / (maxHit - minHit));
+            for (int i = 0; i < mainIndex.manga.Length; i++)
+                mainIndex.manga[i].popWeight = (float)((Math.Log(mainIndex.manga[i].h + 1) - minHit) / (maxHit - minHit));
         }
 
         /// <summary>
@@ -270,6 +272,26 @@ namespace KittyManga {
             return heap.ToList();
         }
 
+        /// <summary>
+        /// Fetches the most recently update manga
+        /// </summary>
+        /// <param name="top">The number to return</param>
+        /// <returns>The most recent mangas</returns>
+        public int[] FetchUpdated(int top = 10) {
+            var heap = new Heap<KeyValuePair<int, double>>((a, b) => a.Value.CompareTo(b));
+            for (int i = 0; i < mainIndex.manga.Length; i++) {
+                if (mainIndex.manga[i].ld == null)
+                    continue;
+                if (heap.Count < top)
+                    heap.Add(new KeyValuePair<int, double>(i, (double)mainIndex.manga[i].ld));
+                else if (heap.Min.Value < (double)mainIndex.manga[i].ld) {
+                    heap.RemoveMin();
+                    heap.Add(new KeyValuePair<int, double>(i, (double)mainIndex.manga[i].ld));
+                }
+            }
+            return heap.Select<KeyValuePair<int, double>, int>(x => x.Key).ToArray();
+        }
+
         int[,] dpMat = new int[400, 400];
         /// <summary>
         /// The string edit distance with transposition
@@ -311,13 +333,13 @@ namespace KittyManga {
         public int total;
     }
 
-    public class MangaAddress {
+    public struct MangaAddress {
         public string a;
         public string[] c;
         public int h;
         public string i;
         public string im;
-        public float ld;
+        public object ld;
         public int s;
         public string t;
         public float popWeight;

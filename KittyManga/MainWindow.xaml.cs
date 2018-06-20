@@ -33,15 +33,13 @@ namespace KittyManga {
         public static RoutedCommand ToggleFullscreenCommand = new RoutedCommand("ToggleFullscreenCommand", typeof(MainWindow), new InputGestureCollection() { new KeyGesture(Key.F11) });
         public static RoutedCommand EscCommand = new RoutedCommand("EscCommand", typeof(MainWindow), new InputGestureCollection() { new KeyGesture(Key.Escape) });
 
-
         Manga curManga = null;
         int curChIndex = -1;
         BitmapImage[] prefetchedData = null;
         bool loadPrefetchOnComplete = false;
         bool hasPrev, hasNext;
 
-        Dictionary<string, int> bookmarks;
-        List<string> recents = new List<string>();
+        Dictionary<string, MangaBookmark> bookmarks;
         bool nightmode = false;
 
         public MainWindow() {
@@ -264,8 +262,8 @@ namespace KittyManga {
                     };
                     ChGrid.Children.Add(butt);
                 }
-                if (bookmarks.ContainsKey(r.m.id) && ChGrid.Children.Count > bookmarks[r.m.id])
-                    (ChGrid.Children[bookmarks[r.m.id]] as Button).Background = Brushes.DarkGoldenrod;
+                if (bookmarks.ContainsKey(r.m.id) && ChGrid.Children.Count > bookmarks[r.m.id].lastChapter)
+                    (ChGrid.Children[bookmarks[r.m.id].lastChapter] as Button).Background = Brushes.DarkGoldenrod;
             };
             worker.RunWorkerAsync();
         }
@@ -279,19 +277,18 @@ namespace KittyManga {
                 try {
                     using (Stream f = File.OpenRead(USER_DATA_FILE)) {
                         XDocument doc = XDocument.Load(f);
-                        recents = doc.Descendants("UserData").Descendants("recents").Select(x => (string)x.Attribute("m")).ToList();
                         bookmarks = doc.Descendants("UserData").Descendants("bookmarks").ToDictionary(x => {
                             if (x.Attribute("k") == null)
                                 return "";
                             return (string)x.Attribute("k");
                         }, x => {
-                            if (x.Attribute("v") == null)
-                                return -1;
-                            return (int)x.Attribute("v");
+                            if (x.Attribute("k") == null)
+                                return null;
+                            return new MangaBookmark() { lastChapter = (int)x.Attribute("v"), id = (string)x.Attribute("k"), lastRead = DateTime.Parse((string)x.Attribute("d")) };
                         });
                     }
                 }
-                catch (Exception) { bookmarks = new Dictionary<string, int>(); recents = new List<string>(); }
+                catch (Exception) { bookmarks = new Dictionary<string, MangaBookmark>(); }
             };
             worker.RunWorkerCompleted += (sender, e) => {
                 SearchPane.Visibility = DisplayPane.Visibility = Visibility.Visible; ProgressTip = "Idle";
@@ -351,12 +348,13 @@ namespace KittyManga {
             loadPrefetchOnComplete = false;
 
             if (bookmarks.ContainsKey(m.id)) {
-                if (curManga != m && ChGrid.Children.Count > bookmarks[m.id])
-                    (ChGrid.Children[bookmarks[m.id]] as Button).Background = null;
-                bookmarks[m.id] = chIndex;
+                if (curManga != m && ChGrid.Children.Count > bookmarks[m.id].lastChapter)
+                    (ChGrid.Children[bookmarks[m.id].lastChapter] as Button).Background = null;
+                bookmarks[m.id].lastChapter = chIndex;
+                bookmarks[m.id].lastRead = DateTime.UtcNow;
             }
             else
-                bookmarks.Add(m.id, chIndex);
+                bookmarks.Add(m.id, new MangaBookmark() { id = m.id, lastChapter = chIndex, lastRead = DateTime.UtcNow });
 
             Binding binding = new Binding();
             binding.Path = new PropertyPath("ViewportWidth");
@@ -553,10 +551,14 @@ namespace KittyManga {
                 XElement root = new XElement("UserData");
                 XElement xElem = new XElement(
                         "bookmarks",
-                        bookmarks.Select(x => { if (x.Key == "") return null; return new XElement("bookmarks", new XAttribute("k", x.Key), new XAttribute("v", x.Value)); })
+                        bookmarks.Select(x => {
+                            if (x.Key == "") return null;
+                            return new XElement("bookmarks",
+                                    new XAttribute("k", x.Key),
+                                    new XAttribute("v", x.Value.lastChapter),
+                                    new XAttribute("d", x.Value.lastRead.ToString()));
+                        })
                      );
-                root.Add(xElem);
-                xElem = new XElement("recents", recents.Select(x => { if (x == null) return null; return new XElement("recents", new XAttribute("m", x)); }));
                 root.Add(xElem);
                 doc.Add(root);
                 doc.Save(USER_DATA_FILE);

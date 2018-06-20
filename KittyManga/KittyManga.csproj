@@ -64,6 +64,7 @@
     <Compile Include="FpsTicker.cs" />
     <Compile Include="Heap.cs" />
     <Compile Include="InvertEffect.cs" />
+    <Compile Include="MangaBookmark.cs" />
     <Compile Include="SmoothScrollViewer.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
