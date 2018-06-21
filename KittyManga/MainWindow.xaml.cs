@@ -65,7 +65,7 @@ namespace KittyManga {
                 };
             }
 
-            //Add columns for grids
+            //Add columns, rows and buttons for grids
             for (int i = 0; i < NUM_CH_COL; i++)
                 ChGrid.ColumnDefinitions.Add(new ColumnDefinition());
             for (int i = 0; i < NUM_RECENTS_COL; i++) {
@@ -88,18 +88,20 @@ namespace KittyManga {
                 }
             }
 
-            //Start timers
+            //Start the timer for searching.
             DispatcherTimer timer = new DispatcherTimer();
             timer.Interval += TimeSpan.FromMilliseconds(500);
             timer.Tick += (s, e) => { AsyncSearch(s, null); };
             timer.Start();
 
+            //Read settings
             string setting;
             if ((setting = ReadSetting("NightMode")) != null)
                 NightMode = bool.Parse(setting);
             if ((setting = ReadSetting("LeftToRight")) != null)
                 LeftToRight = bool.Parse(setting);
 
+            //Subscribe to exit to save settings
             Application.Current.Exit += OnExit;
         }
 
@@ -109,9 +111,9 @@ namespace KittyManga {
         public void AsyncSearch(object s, KeyEventArgs args) {
             if (api.mainIndex == null) return;
             if (args != null && args.Key != Key.Return)
-                return;
+                return;//Search on enter or if called by the timer
             if (s is DispatcherTimer && lastSearch == SearchBar.Text)
-                return;
+                return;//Dont search if the last search term didnt change
             if (searchThread != null)
                 searchThread.Abort();
 
@@ -134,6 +136,7 @@ namespace KittyManga {
                 if (e.Cancelled)
                     return;
                 searchThread = null;
+                //Update the buttons with the results and reset them
                 List<MangaAPI.MangaMatch> sug = e.Result as List<MangaAPI.MangaMatch>;
                 for (int i = 0; i < VisualTreeHelper.GetChildrenCount(SugButtons); i++) {
                     Button butt = (VisualTreeHelper.GetChild(SugButtons, i) as Button);
@@ -141,11 +144,10 @@ namespace KittyManga {
                     int index = sug[i].index;
                     butt.Content = $"{api[index].t} ({(sug[i].s * 100).ToString("0.#")}%)";
                     butt.Resources["MangaId"] = api[index].i;
+                    butt.Background = null;
                 }
-                foreach (object obj in SugButtons.Children)
-                    (obj as Button).Background = null;
 
-                if (args != null && args.Key == Key.Return)
+                if (args != null && args.Key == Key.Return)//Highlight the first result if enter is pressed
                     (VisualTreeHelper.GetChild(SugButtons, 0) as Button).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             };
             worker.RunWorkerAsync(SearchBar.Text);
@@ -153,10 +155,11 @@ namespace KittyManga {
 
         bool fetchingChapter = false;
         public void AsyncFetchChapter(Manga m, int chIndex) {
-            if (fetchingChapter)
+            if (fetchingChapter)//Can only fetch one cahpter at a time
                 return;
             fetchingChapter = true;
 
+            //If prefetching, abort it cause were jumping to a new chapter
             if (mangaPrefetchThread != null)
                 mangaPrefetchThread.Abort();
             mangaPrefetchThread = null;
@@ -164,7 +167,7 @@ namespace KittyManga {
 
             ImagePane.Children.Clear();
             BackgroundWorker worker = new BackgroundWorker();
-            worker.DoWork += (s, e) => {
+            worker.DoWork += (s, e) => {//Fetch
                 e.Result = api.FetchChapter(e.Argument as string, worker);
             };
             worker.WorkerReportsProgress = true;
@@ -180,6 +183,7 @@ namespace KittyManga {
             worker.RunWorkerAsync(m.chapters[chIndex][3] as string);
         }
 
+        //Fetch a chapter but keep it in memory and not load it
         public void AsyncPrefetchChapter(Manga m, int chIndex) {
             if (mangaPrefetchThread != null)
                 mangaPrefetchThread.Abort();
@@ -212,7 +216,7 @@ namespace KittyManga {
                     RightButt.ToolTip = "Next";
                 else
                     LeftButt.ToolTip = "Next";
-                if (loadPrefetchOnComplete)
+                if (loadPrefetchOnComplete)//If the next button is clicked, this is set to true so it loads after its done fetching
                     LoadChapterFromData(prefetchedData, m, chIndex);
 
                 mangaPrefetchThread = null;
@@ -220,11 +224,13 @@ namespace KittyManga {
             worker.RunWorkerAsync(m.chapters[chIndex][3] as string);
         }
 
+        //A quick class to pass data from DoWork To Complete in AsyncFetchManga
         class MangaImage {
             public BitmapImage cover = null;
             public Manga m;
         }
 
+        //Fetches details for a manga and loads it up on the mangainfopane
         public void AsyncFetchManga(string id) {
             if (api.mainIndex == null) return;
             if (fetchMangaThread != null)
@@ -265,10 +271,10 @@ namespace KittyManga {
                 info += $"\nReleased: {r.m.released}\nHits: {r.m.hits.ToString("N0")}";
                 MangaInfo.Text = info;
                 for (int i = ChGrid.RowDefinitions.Count; i < r.m.chapters.Length / NUM_CH_COL + 1; i++)
-                    ChGrid.RowDefinitions.Add(new RowDefinition());
+                    ChGrid.RowDefinitions.Add(new RowDefinition());//Added extra rows if needed
                 ChGrid.Children.Clear();
                 Thickness thicc = new Thickness(1, 1, 1, 1);
-                for (int i = 0; i < r.m.chapters.Length; i++) {
+                for (int i = 0; i < r.m.chapters.Length; i++) {//Add all the chapter buttons
                     Button butt = new Button();
                     butt.SetValue(Button.HorizontalAlignmentProperty, HorizontalAlignment.Left);
                     string n = api.GetChapterName(r.m, i);
@@ -285,7 +291,7 @@ namespace KittyManga {
                         AsyncFetchChapter((s as Button).Resources["m"] as Manga, (int)(s as Button).Resources["i"]);
                     };
                     ChGrid.Children.Add(butt);
-                }
+                }//Update button background according to bookmark
                 if (bookmarks.ContainsKey(r.m.id) && ChGrid.Children.Count > bookmarks[r.m.id].lastChapter)
                     (ChGrid.Children[bookmarks[r.m.id].lastChapter] as Button).Background = Brushes.DarkGoldenrod;
                 MangaInfoPane.Visibility = Visibility.Visible;
@@ -298,9 +304,8 @@ namespace KittyManga {
             BackgroundWorker worker = new BackgroundWorker();
             worker.WorkerReportsProgress = false;
             worker.DoWork += (sender, e) => {
-                api.FetchIndex(true);
-                //api.FetchManga(0);//Test fetch a manga to check for server connection
-                try {
+                api.FetchIndex(true);//Fetches the mainIndex from a file or the internet if the cached file is too old
+                try {//Try to load the user configs and bookmarks
                     using (Stream f = File.OpenRead(USER_DATA_FILE)) {
                         XDocument doc = XDocument.Load(f);
                         bookmarks = doc.Descendants("UserData").Descendants("bookmarks").ToDictionary(x => {
@@ -313,7 +318,7 @@ namespace KittyManga {
                             return new MangaBookmark() { lastChapter = (int)x.Attribute("v"), id = (string)x.Attribute("k"), lastRead = DateTime.Parse((string)x.Attribute("d")) };
                         });
                     }
-                }
+                }//Any goes wrong, just reset all bookmarks
                 catch (Exception) { bookmarks = new Dictionary<string, MangaBookmark>(); }
             };
             worker.RunWorkerCompleted += (sender, e) => {
@@ -329,7 +334,7 @@ namespace KittyManga {
             if (fetchRecentThread != null) return;
             fetchRecentThread = new Thread(() => {
                 Heap<MangaBookmark> heap = new Heap<MangaBookmark>((a, b) => a.lastRead.CompareTo(b.lastRead));
-                //Find most recently read mangas
+                //Find most recently read mangas from bookmakrs
                 foreach (var item in bookmarks) {
                     if (item.Key == "") continue;
                     if (heap.Count < NUM_RECENTS_COL)
@@ -346,8 +351,9 @@ namespace KittyManga {
                     MangaAddress a = new MangaAddress();
                     bool found = false;
                     string url = null;
+                    //Since the recents col is at most five or so, I didnt see the need to init a dict for 10000 mangas
                     foreach (var o in api.mainIndex.manga)
-                        if (o.idHash == hash) {
+                        if (o.idHash == hash && o.i == item.id) {
                             url = o.im;
                             a = o;
                             found = true;
@@ -358,7 +364,7 @@ namespace KittyManga {
                     BitmapImage cover = null;
                     if (url != null)
                         cover = api.DownloadImage(MangaAPI.API_IMG + url);
-                    Application.Current.Dispatcher.Invoke(() => {
+                    Application.Current.Dispatcher.Invoke(() => {//Update UI
                         Grid g = RecentsGrid.Children[i] as Grid;
                         if (g.Resources.Contains("i"))
                             g.Resources["i"] = a.i;
@@ -376,8 +382,9 @@ namespace KittyManga {
             fetchRecentThread.Start();
         }
 
+        //Refreshes the main index and refresh the updated page after
         public void AysncRefreshIndex(object s, RoutedEventArgs args) {
-            //Make sure nothing that needs mainIndex is using it
+            //Make sure nothing that needs mainIndex is using it. TODO: use actual thread locks to make 100% sure
             if (searchThread != null) return;
             if (fetchMangaThread != null) return;
             if (fetchUpdateThread != null) return;
@@ -398,10 +405,11 @@ namespace KittyManga {
             worker.RunWorkerAsync();
         }
 
+        //Fetches the update panel covers
         public void AsyncFetchUpdates() {
             if (fetchUpdateThread != null)
                 return;
-            fetchUpdateThread = new Thread(() => {
+            fetchUpdateThread = new Thread(() => {//Get all the updates and download their covers
                 int[] updated = api.FetchUpdated(NUM_UPDATES_ROW * NUM_UPDATES_COL);
                 for (int i = 0; i < updated.Length; i++) {
                     BitmapImage cover = api.FetchCover(updated[i]);
@@ -471,6 +479,10 @@ namespace KittyManga {
 
         #region UI
 
+        /// <summary>
+        /// Builds the cover button on hte update and recents panel
+        /// </summary>
+        /// <returns></returns>
         public Grid BuildCoverButton() {
             Grid g = new Grid();
             g.MouseDown += OnCoverPress;
@@ -504,11 +516,17 @@ namespace KittyManga {
             }
         }
 
+        /// <summary>
+        /// Loads a chapter from the date provided
+        /// </summary>
+        /// <param name="data">The images</param>
+        /// <param name="m">The manga it came from</param>
+        /// <param name="chIndex">The chapter it came from</param>
         public void LoadChapterFromData(BitmapImage[] data, Manga m, int chIndex) {
             prefetchedData = null;
             loadPrefetchOnComplete = false;
 
-            if (bookmarks.ContainsKey(m.id)) {
+            if (bookmarks.ContainsKey(m.id)) {//Update bookmark buttons
                 if (curManga != m && ChGrid.Children.Count > bookmarks[m.id].lastChapter)
                     (ChGrid.Children[bookmarks[m.id].lastChapter] as Button).Background = null;
                 bookmarks[m.id].lastChapter = chIndex;
@@ -532,6 +550,7 @@ namespace KittyManga {
                 ImagePane.Children.Add(img);
             }
 
+            //Update bookmark buttons
             if (ChGrid.Children.Count > chIndex)
                 if (curManga == null)
                     (ChGrid.Children[chIndex] as Button).Background = Brushes.DarkGoldenrod;
@@ -542,11 +561,12 @@ namespace KittyManga {
             curManga = m;
             curChIndex = chIndex;
 
+            //Update top bar
             BarChName.Text = m.title + ", " + api.GetChapterName(m, chIndex);
             hasPrev = chIndex > 0;
             hasNext = chIndex < m.chapters.Length - 1;
 
-            if (LeftToRight) {
+            if (LeftToRight) {//Makes sure the left and right butts are properly switched when using different read directions
                 LeftButt.Visibility = hasPrev ? Visibility.Visible : Visibility.Hidden;
                 RightButt.Visibility = hasNext ? Visibility.Visible : Visibility.Hidden;
                 DisplayScroll.ScrollToLeftEnd();
@@ -561,9 +581,9 @@ namespace KittyManga {
                 LeftButt.ToolTip = "Next (Fetching...)";
             }
 
-            if (hasNext)
+            if (hasNext)//Prefetch next chapter if applicable
                 AsyncPrefetchChapter(m, chIndex + 1);
-            AsyncFetchRecents();
+            AsyncFetchRecents();//Update recents panel
             GC.Collect();
         }
 
@@ -577,17 +597,12 @@ namespace KittyManga {
             SearchPane.Visibility = SearchPane.Visibility == Visibility.Hidden ? Visibility.Visible : Visibility.Hidden;
         }
 
-
+        //Left and right butt does different things when slapped based on which direction the images are laid out in
         public void LeftButtSlapped(object sender, RoutedEventArgs e) {
             if (LeftToRight)
                 LoadPrev();
             else
                 LoadNext();
-        }
-
-        public void ShowSearchPane(object sender, KeyEventArgs args) {
-            if (args.Key == Key.S)
-                SearchPane.Visibility = Visibility.Visible;
         }
 
         public void RightButtSlapped(object sender, RoutedEventArgs e) {
@@ -597,9 +612,15 @@ namespace KittyManga {
                 LoadPrev();
         }
 
+        public void ShowSearchPane(object sender, KeyEventArgs args) {
+            if (args.Key == Key.S)
+                SearchPane.Visibility = Visibility.Visible;
+        }
+
+        //Loads the next chapter from prefetched cache.
         public void LoadNext() {
             if (prefetchedData == null)
-                loadPrefetchOnComplete = true;
+                loadPrefetchOnComplete = true;//Load on finish if prefetching is not done
             else
                 LoadChapterFromData(prefetchedData, curManga, curChIndex + 1);
         }
@@ -609,7 +630,7 @@ namespace KittyManga {
         }
 
         public bool LeftToRight {
-            set {
+            set {//Changes layout direciton and update the left and right buttons
                 ImagePane.FlowDirection = value ? FlowDirection.LeftToRight : FlowDirection.RightToLeft;
                 DisplayScroll.ScrollToHorizontalOffset(DisplayScroll.ScrollableWidth - DisplayScroll.HorizontalOffset);
                 if (value) {
