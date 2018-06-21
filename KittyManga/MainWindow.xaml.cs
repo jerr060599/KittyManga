@@ -179,6 +179,7 @@ namespace KittyManga {
                 loadPrefetchOnComplete = false;
                 ProgressTip = "Idle";
                 fetchingChapter = false;
+                AsyncFetchRecents();//Update recents panel
             };
             worker.RunWorkerAsync(m.chapters[chIndex][3] as string);
         }
@@ -583,7 +584,6 @@ namespace KittyManga {
 
             if (hasNext)//Prefetch next chapter if applicable
                 AsyncPrefetchChapter(m, chIndex + 1);
-            AsyncFetchRecents();//Update recents panel
             GC.Collect();
         }
 
