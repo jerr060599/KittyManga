@@ -373,7 +373,7 @@ namespace KittyManga {
                             g.Resources.Add("i", a.i);
                         Image img = g.Children[0] as Image;
                         img.Source = cover;
-                        ((g.Children[1] as Viewbox).Child as TextBlock).Text = a.t + $"\nRead {item.lastRead.ToLocalTime().ToString()}";
+                        ((g.Children[1] as Viewbox).Child as TextBlock).Text = a.t + $"\nRead {item.lastRead.ToLocalTime().ToString("MM/dd/yyyy h:mm tt")}";
                         g.Visibility = Visibility.Visible;
                     });
                     i++;
@@ -424,7 +424,7 @@ namespace KittyManga {
                             g.Resources.Add("i", api[updated[i]].i);
                         Viewbox box = (UpdatesGrid.Children[i] as Grid).Children[1] as Viewbox;
                         (box.Child as TextBlock).Text = api[i].t +
-                                "\nUpdated " + new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddSeconds((double)api[updated[i]].ld).ToLocalTime();
+                                "\nUpdated " + new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddSeconds((double)api[updated[i]].ld).ToLocalTime().ToString("MM/dd/yyyy h:mm tt");
                     });
                 }
                 fetchUpdateThread = null;
