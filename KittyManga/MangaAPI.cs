@@ -118,7 +118,10 @@ namespace KittyManga {
         /// <returns>The downloaded image</returns>
         public BitmapImage DownloadImage(string url) {
             using (WebClient client = new WebClient()) {
-                return LoadImage(client.DownloadData(url));
+                try {
+                    return LoadImage(client.DownloadData(url));
+                }
+                catch (WebException) { return null; }
             }
         }
 
@@ -166,7 +169,10 @@ namespace KittyManga {
                                 next++;
                             }
                             if (!cur.IsAlive) break;
-                            data[index] = LoadImage(tc.DownloadData(urls[index]));
+                            try {
+                                data[index] = LoadImage(tc.DownloadData(urls[index]));
+                            }
+                            catch (WebException) { }
                             done++;
                             if (!cur.IsAlive) break;
                             else if (sender != null && sender.IsBusy)
