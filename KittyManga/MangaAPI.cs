@@ -151,6 +151,7 @@ namespace KittyManga {
         public BitmapImage[] DownloadImages(string[] urls, BackgroundWorker sender = null, int numThreads = 5) {
             BitmapImage[] data = new BitmapImage[urls.Length];
             Thread[] threads = new Thread[numThreads];
+            Thread cur = Thread.CurrentThread;
             int done = 0;
             int next = 0;
             for (int i = 0; i < numThreads; i++) {
@@ -164,16 +165,18 @@ namespace KittyManga {
                                 index = next;
                                 next++;
                             }
+                            if (!cur.IsAlive) break;
                             data[index] = LoadImage(tc.DownloadData(urls[index]));
                             done++;
-                            if (sender != null)
+                            if (!cur.IsAlive) break;
+                            else if (sender != null && sender.IsBusy)
                                 sender.ReportProgress(urls.Length - done);
                         }
                     }
                 });
                 threads[i].Start();
             }
-            for (int i = 0; i < numThreads; i++) threads[i].Join();
+            foreach (Thread t in threads) t.Join();
             return data;
         }
 

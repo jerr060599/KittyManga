@@ -48,6 +48,7 @@ namespace KittyManga {
 
         public MainWindow() {
             InitializeComponent();
+            AppDomain.CurrentDomain.UnhandledException += WriteWillBeforeCrash;
             SearchPane.Visibility = DisplayPane.Visibility = Visibility.Hidden;
             this.DataContext = this;
             AsyncInit();
@@ -192,6 +193,7 @@ namespace KittyManga {
             prefetchedData = null;
 
             BackgroundWorker worker = new BackgroundWorker();
+            worker.WorkerSupportsCancellation = true;
             ProgressTip = $"Pre-Fetching...";
             worker.DoWork += (sender, e) => {
                 try {
@@ -199,6 +201,7 @@ namespace KittyManga {
                     e.Result = api.FetchChapter(e.Argument as string, worker);
                 }
                 catch (ThreadAbortException) {
+                    worker.CancelAsync();
                     e.Cancel = true;
                     Thread.ResetAbort();
                     mangaPrefetchThread = null;
@@ -745,6 +748,15 @@ namespace KittyManga {
                 doc.Add(root);
                 doc.Save(USER_DATA_FILE);
             }).Start();
+        }
+
+        public void WriteWillBeforeCrash(object s, UnhandledExceptionEventArgs e) {
+            using (StreamWriter w = new StreamWriter(File.Create("KIttyManga_Will_" + DateTime.Now.ToString("MM/DD_HH:mm:ss") + ".txt"))) {
+                w.WriteLine((e.ExceptionObject as Exception).TargetSite);
+                w.WriteLine((e.ExceptionObject as Exception).Message);
+                w.WriteLine((e.ExceptionObject as Exception).StackTrace);
+                w.Close();
+            }
         }
 
         #endregion
