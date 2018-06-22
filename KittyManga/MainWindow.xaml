@@ -57,10 +57,10 @@
                 </Grid>
             </local:SmoothScrollViewer>
             <Grid Name="ZoomBg" IsHitTestVisible="False" Background="#99000000" Visibility="Hidden">
-                <Image Name="ZoomImg">
+                <Image Name="ZoomImg" Margin="60">
                     <Image.RenderTransform>
                         <TransformGroup>
-                            <ScaleTransform ScaleY="2" ScaleX="2"/>
+                            <ScaleTransform ScaleY="2.1" ScaleX="2.1"/>
                         </TransformGroup>
                     </Image.RenderTransform>
                 </Image>
