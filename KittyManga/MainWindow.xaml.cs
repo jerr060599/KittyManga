@@ -366,21 +366,17 @@ namespace KittyManga {
                 foreach (var item in heap) {
                     int hash = item.id.GetHashCode();
                     MangaAddress a = new MangaAddress();
-                    bool found = false;
-                    string url = null;
+                    int index = -1;
                     //Since the recents col is at most five or so, I didnt see the need to init a dict for 10000 mangas
-                    foreach (var o in api.mainIndex.manga)
-                        if (o.idHash == hash && o.i == item.id) {
-                            url = o.im;
-                            a = o;
-                            found = true;
+                    for (int j = 0; j < api.mainIndex.manga.Length; j++)
+                        if (api[j].idHash == hash && api[j].i == item.id) {
+                            index = j;
                             break;
                         }
-                    if (!found)
+                    if (index == -1)//Not found
                         continue;
-                    BitmapImage cover = null;
-                    if (url != null)
-                        cover = api.DownloadImage(MangaAPI.API_IMG + url);
+                    a = api[index];
+                    BitmapImage cover = api.FetchCover(index);
                     Application.Current.Dispatcher.Invoke(() => {//Update UI
                         Grid g = RecentsGrid.Children[i] as Grid;
                         if (g.Resources.Contains("i"))
