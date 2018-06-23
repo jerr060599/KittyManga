@@ -25,9 +25,9 @@ namespace KittyManga {
     /// </summary>
     public partial class MainWindow : Window {
         public const int NUM_CH_COL = 5;
-        public const int NUM_RECENTS_COL = 5;
+        public const int NUM_RECENT_FEED_COL = 5;
         public const int NUM_UPDATES_COL = 5;
-        public const int NUM_UPDATES_ROW = 8;
+        public const int NUM_UPDATES_ROW = 20;
 
         public const string USER_DATA_FILE = "UserData.xml";
         MangaAPI api = new MangaAPI();
@@ -36,7 +36,7 @@ namespace KittyManga {
         public static RoutedCommand ToggleFullscreenCommand = new RoutedCommand("ToggleFullscreenCommand", typeof(MainWindow), new InputGestureCollection() { new KeyGesture(Key.F11) });
         public static RoutedCommand EscCommand = new RoutedCommand("EscCommand", typeof(MainWindow), new InputGestureCollection() { new KeyGesture(Key.Escape) });
 
-        Manga curManga = null;
+        Manga curManga = null, curMangaInfo = null;
         int curChIndex = -1;
         BitmapImage[] prefetchedData = null;
         bool loadPrefetchOnComplete = false;
@@ -72,11 +72,17 @@ namespace KittyManga {
             //Add columns, rows and buttons for grids
             for (int i = 0; i < NUM_CH_COL; i++)
                 ChGrid.ColumnDefinitions.Add(new ColumnDefinition());
-            for (int i = 0; i < NUM_RECENTS_COL; i++) {
+            for (int i = 0; i < NUM_RECENT_FEED_COL; i++) {
+                //Recent Grid
                 RecentsGrid.ColumnDefinitions.Add(new ColumnDefinition());
                 Grid g = BuildCoverButton();
                 Grid.SetColumn(g, i);
                 RecentsGrid.Children.Add(g);
+                //Feed grid
+                FeedGrid.ColumnDefinitions.Add(new ColumnDefinition());
+                g = BuildCoverButton();
+                Grid.SetColumn(g, i);
+                FeedGrid.Children.Add(g);
             }
 
             for (int i = 0; i < NUM_UPDATES_COL; i++)
@@ -115,7 +121,7 @@ namespace KittyManga {
 
         string lastSearch = "";
         public void AsyncSearch(object s, KeyEventArgs args) {
-            if (api.mainIndex == null) return;
+            if (!api.IsReady) return;
             if (args != null && args.Key != Key.Return)
                 return;//Search on enter or if called by the timer
             if (s is DispatcherTimer && lastSearch == SearchBar.Text)
@@ -280,6 +286,7 @@ namespace KittyManga {
                     return;
                 fetchMangaThread = null;
                 MangaImage r = e.Result as MangaImage;
+                curMangaInfo = r.m;
                 MangaDesc.Text = r.m.description;
                 MangaCover.Visibility = r.cover == null ? Visibility.Hidden : Visibility.Visible;
                 (MangaCover.Children[0] as Image).Source = r.cover;
@@ -314,8 +321,11 @@ namespace KittyManga {
                     };
                     ChGrid.Children.Add(butt);
                 }//Update button background according to bookmark
-                if (!local && bookmarks.ContainsKey(r.m.id) && ChGrid.Children.Count > bookmarks[r.m.id].lastChapter)
-                    (ChGrid.Children[bookmarks[r.m.id].lastChapter] as Button).Background = Brushes.DarkGoldenrod;
+                if (!local && bookmarks.ContainsKey(r.m.id)) {
+                    if (ChGrid.Children.Count > bookmarks[r.m.id].lastChapter)
+                        (ChGrid.Children[bookmarks[r.m.id].lastChapter] as Button).Background = Brushes.DarkGoldenrod;
+                    RmFromFeed.Visibility = Visibility.Visible;
+                }
                 MangaInfoPane.Visibility = Visibility.Visible;
                 MangaInfoPane.Height = double.NaN;
             };
@@ -352,36 +362,26 @@ namespace KittyManga {
         }
 
         public void AsyncFetchRecents() {
-            if (api.mainIndex == null) return;
+            if (!api.IsReady) return;
             if (fetchRecentThread != null) return;
             fetchRecentThread = new Thread(() => {
-                Heap<MangaBookmark> heap = new Heap<MangaBookmark>((a, b) => a.lastRead.CompareTo(b.lastRead));
+                Heap<MangaBookmark> readHeap = new Heap<MangaBookmark>((a, b) => a.lastRead.CompareTo(b.lastRead));//Keeps track of last read date
                 //Find most recently read mangas from bookmakrs
                 foreach (var item in bookmarks) {
                     if (item.Key == "") continue;
-                    if (heap.Count < NUM_RECENTS_COL)
-                        heap.Add(item.Value);
-                    else if (heap.Min.lastRead < item.Value.lastRead) {
-                        heap.RemoveMin();
-                        heap.Add(item.Value);
+                    if (readHeap.Count < NUM_RECENT_FEED_COL)
+                        readHeap.Add(item.Value);
+                    else if (readHeap.Min.lastRead < item.Value.lastRead) {
+                        readHeap.RemoveMin();
+                        readHeap.Add(item.Value);
                     }
                 }
-                //Search index for their image links by hash code
                 int i = 0;
-                foreach (var item in heap) {
-                    int hash = item.id.GetHashCode();
-                    MangaAddress a = new MangaAddress();
-                    int index = -1;
-                    //Since the recents col is at most five or so, I didnt see the need to init a dict for 10000 mangas
-                    for (int j = 0; j < api.mainIndex.manga.Length; j++)
-                        if (api[j].idHash == hash && api[j].i == item.id) {
-                            index = j;
-                            break;
-                        }
-                    if (index == -1)//Not found
+                foreach (var item in readHeap) {
+                    if (!api.ContainsManga(item.id))
                         continue;
-                    a = api[index];
-                    BitmapImage cover = api.FetchCover(index);
+                    MangaAddress a = api[item.id];
+                    BitmapImage cover = api.FetchCover(item.id);
                     Application.Current.Dispatcher.Invoke(() => {//Update UI
                         Grid g = RecentsGrid.Children[i] as Grid;
                         if (g.Resources.Contains("i"))
@@ -407,8 +407,8 @@ namespace KittyManga {
             if (fetchMangaThread != null) return;
             if (fetchUpdateThread != null) return;
             if (fetchRecentThread != null) return;
-            if (api.mainIndex == null) return;
-            api.mainIndex = null;
+            if (!api.IsReady) return;
+            api.Clear();
             refreshButt.Visibility = Visibility.Hidden;
             BackgroundWorker worker = new BackgroundWorker();
             worker.WorkerReportsProgress = false;
@@ -425,12 +425,41 @@ namespace KittyManga {
 
         //Fetches the update panel covers
         public void AsyncFetchUpdates() {
-            if (api.mainIndex == null) return;
+            if (!api.IsReady) return;
             if (fetchUpdateThread != null)
                 return;
-            fetchUpdateThread = new Thread(() => {//Get all the updates and download their covers
+            fetchUpdateThread = new Thread(() => {
+                //Get feed udpates and their covers
+                Heap<MangaAddress> dateHeap = new Heap<MangaAddress>((a, b) => Math.Sign((double)a.ld - (double)b.ld));//Keeps track of last updated date
+                foreach (var item in bookmarks) {
+                    if (api.ContainsManga(item.Key) && api[item.Key].ld != null)
+                        if (dateHeap.Count < NUM_RECENT_FEED_COL)
+                            dateHeap.Add(api[item.Key]);
+                        else if ((double)dateHeap.Min.ld < (double)api[item.Key].ld) {
+                            dateHeap.RemoveMin();
+                            dateHeap.Add(api[item.Key]);
+                        }
+                }
+                int i = 0;
+                foreach (var a in dateHeap) {
+                    BitmapImage cover = api.FetchCover(a.i);
+                    Application.Current.Dispatcher.Invoke(() => {//Update UI
+                        Grid g = FeedGrid.Children[i] as Grid;
+                        if (g.Resources.Contains("i"))
+                            g.Resources["i"] = a.i;
+                        else
+                            g.Resources.Add("i", a.i);
+                        Image img = g.Children[0] as Image;
+                        img.Source = cover;
+                        ((g.Children[1] as Viewbox).Child as TextBlock).Text = a.t + $"\nUpdated {new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddSeconds((double)a.ld).ToLocalTime().ToString("MM/dd/yyyy h:mm tt")}";
+                        g.Visibility = Visibility.Visible;
+                    });
+                    i++;
+                }
+
+                //Get all the updates and download their covers
                 int[] updated = api.FetchUpdated(NUM_UPDATES_ROW * NUM_UPDATES_COL);
-                for (int i = 0; i < updated.Length; i++) {
+                for (i = 0; i < updated.Length; i++) {
                     BitmapImage cover = api.FetchCover(updated[i]);
                     Application.Current.Dispatcher.Invoke(() => {
                         UpdatesGrid.Children[i].Visibility = Visibility.Visible;
@@ -648,6 +677,12 @@ namespace KittyManga {
                 loadPrefetchOnComplete = true;//Load on finish if prefetching is not done
             else
                 LoadChapterFromData(prefetchedData, curManga, curChIndex + 1);
+        }
+
+        public void RemoveCurMangaInfoFromFeed(object sender, RoutedEventArgs e) {
+            if (bookmarks.ContainsKey(curMangaInfo.id))
+                bookmarks.Remove(curMangaInfo.id);
+            RmFromFeed.Visibility = Visibility.Hidden;
         }
 
         public void LoadPrev() {

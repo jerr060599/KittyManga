@@ -25,11 +25,34 @@ namespace KittyManga {
             get { return mainIndex.manga[i]; }
         }
 
+        public MangaAddress this[string id] {
+            get { return mainIndex.manga[table[id]]; }
+        }
+
+        /// <summary>
+        /// The number of manga in the index
+        /// </summary>
+        public int Count { get { return mainIndex.manga.Length; } }
+
+        /// <summary>
+        /// Whether the index have been populated and is ready
+        /// </summary>
+        public bool IsReady { get { return mainIndex != null; } }
+
+        public void Clear() {
+            mainIndex = null;
+            table.Clear();
+        }
+
+        public bool ContainsManga(string k) {
+            return table.ContainsKey(k);
+        }
+
         /// <summary>
         /// The main index containing overview info for every manga availible
         /// </summary>
         public AddressInfo mainIndex = null;
-
+        public Dictionary<string, int> table = new Dictionary<string, int>();
         /// <summary>
         /// Fetchs the main index of mangas from MangaEden or local file synchronously.
         /// </summary>
@@ -83,6 +106,7 @@ namespace KittyManga {
         /// </summary>
         private void ProcessIndex() {
             float minHit = float.MaxValue, maxHit = float.MinValue;
+            table.Clear();
             for (int i = 0; i < mainIndex.manga.Length; i++) {
                 MangaAddress a = mainIndex.manga[i];
                 a.t = System.Net.WebUtility.HtmlDecode(a.t);
@@ -90,8 +114,8 @@ namespace KittyManga {
                 float s = (float)Math.Log(a.h + 1);
                 minHit = Math.Min(minHit, s);
                 maxHit = Math.Max(maxHit, s);
-                a.idHash = a.i.GetHashCode();
                 mainIndex.manga[i] = a;
+                table.Add(a.i, i);
             }
             for (int i = 0; i < mainIndex.manga.Length; i++)
                 mainIndex.manga[i].popWeight = (float)((Math.Log(mainIndex.manga[i].h + 1) - minHit) / (maxHit - minHit));
@@ -117,8 +141,26 @@ namespace KittyManga {
                     return null;
                 }
                 else return null;
-            else
-                return DownloadImage(API_IMG + (string)m.image);
+            else {
+                BitmapImage img;
+                string cachePath = $@"{AppDomain.CurrentDomain.BaseDirectory}{COVERS_CACHE_DIR}{(string)m.id}.png";
+                if (File.Exists(cachePath)) {
+                    img = new BitmapImage(new Uri(cachePath));
+                }
+                else {
+                    if (m.image == null)
+                        return null;
+                    img = DownloadImage(API_IMG + (string)m.image);
+                    if (img == null) return null;
+                    SaveImage(img, cachePath);
+                }
+                img.Freeze();
+                return img;
+            }
+        }
+
+        public BitmapImage FetchCover(string id) {
+            return FetchCover(table[id]);
         }
 
         /// <summary>
@@ -129,7 +171,7 @@ namespace KittyManga {
         public BitmapImage FetchCover(int i) {
             if (mainIndex.manga[i].im == null) return null;
             BitmapImage img;
-            string cachePath = AppDomain.CurrentDomain.BaseDirectory + COVERS_CACHE_DIR + (string)mainIndex.manga[i].im;
+            string cachePath = $@"{AppDomain.CurrentDomain.BaseDirectory}{COVERS_CACHE_DIR}{(string)mainIndex.manga[i].i}.png";
             if (File.Exists(cachePath)) {
                 img = new BitmapImage(new Uri(cachePath));
             }
@@ -490,7 +532,6 @@ namespace KittyManga {
         public int s;
         public string t;
         public float popWeight;
-        public int idHash;
     }
 
     public class Manga {

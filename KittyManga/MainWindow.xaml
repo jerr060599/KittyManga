@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:KittyManga"
         mc:Ignorable="d"
         Title="Kitty Client" Height="800" Width="1200"
-        ShowInTaskbar="False" Visibility="Hidden">
+        ShowInTaskbar="False" Visibility="Visible">
     <Window.CommandBindings>
         <CommandBinding Command="local:MainWindow.ToggleFullscreenCommand" Executed="ToggleFullscreen"/>
         <CommandBinding Command="local:MainWindow.EscCommand" Executed="EscPressed"/>
@@ -217,6 +217,7 @@
                                 </Image>
                             </Grid>
                             <TextBlock Name="MangaInfo" Margin="0,30,0,0" Foreground="White" FontSize="18" TextWrapping="Wrap"></TextBlock>
+                            <Button Name="RmFromFeed" Click="RemoveCurMangaInfoFromFeed" Visibility="Hidden">Remove From Feed</Button>
                         </StackPanel>
                         <StackPanel Margin="20,0,0,0" Grid.Column="1">
                             <TextBlock Name="MangaDesc" TextWrapping="Wrap"  Foreground="White" FontSize="24"></TextBlock>
@@ -243,6 +244,8 @@
                         </StackPanel.Resources>
                         <Label Foreground="White" FontSize="30" Margin="50,0,0,0">Recently Read</Label>
                         <Grid Name="RecentsGrid" Margin="50,0,50,0" Background="Transparent" Cursor="Arrow"/>
+                        <Label Foreground="White" FontSize="30" Margin="50,0,0,0">Feed</Label>
+                        <Grid Name="FeedGrid" Margin="50,0,50,0" Background="Transparent" Cursor="Arrow"/>
                         <WrapPanel>
                             <Label Foreground="White" FontSize="30" Margin="50,0,0,0">Recently Updated</Label>
                             <Button Name="refreshButt" ToolTip="Refresh" Background="Transparent" Height="20" Width="20" VerticalAlignment="Bottom" Margin="0,0,0,11" Click="AysncRefreshIndex">
