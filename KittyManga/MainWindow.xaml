@@ -141,10 +141,10 @@
                     </Image.RenderTransform>
                 </Image>
 
-                <Button Click="ToggleSearchPane" HorizontalAlignment="Right" VerticalAlignment="Top" Height="22" Width="22" Margin="10" Background="Transparent" Opacity="0.9">
+                <Button Click="ToggleSearchPane" ToolTip="Close Search" HorizontalAlignment="Right" VerticalAlignment="Top" Height="22" Width="22" Margin="10" Background="Transparent" Opacity="0.9">
                     <Image Source="pack://application:,,,/Resources/closeIcon.png"/>
                 </Button>
-                <Button Click="OpenFileDialog" HorizontalAlignment="Right" VerticalAlignment="Top" Height="22" Width="22" Margin="10,10,45,10" Background="Transparent" Opacity="0.9">
+                <Button Click="OpenFileDialog" ToolTip="Load Local Folder" HorizontalAlignment="Right" VerticalAlignment="Top" Height="22" Width="22" Margin="10,10,45,10" Background="Transparent" Opacity="0.9">
                     <Image Source="pack://application:,,,/Resources/openIcon.png"/>
                 </Button>
                 <StackPanel>
@@ -245,7 +245,7 @@
                         <Grid Name="RecentsGrid" Margin="50,0,50,0" Background="Transparent" Cursor="Arrow"/>
                         <WrapPanel>
                             <Label Foreground="White" FontSize="30" Margin="50,0,0,0">Recently Updated</Label>
-                            <Button Name="refreshButt" Background="Transparent" Height="20" Width="20" VerticalAlignment="Bottom" Margin="0,0,0,11" Click="AysncRefreshIndex">
+                            <Button Name="refreshButt" ToolTip="Refresh" Background="Transparent" Height="20" Width="20" VerticalAlignment="Bottom" Margin="0,0,0,11" Click="AysncRefreshIndex">
                                 <Image Source="pack://application:,,,/Resources/refreshIcon.png"/>
                             </Button>
                         </WrapPanel>
