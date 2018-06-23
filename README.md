@@ -9,7 +9,7 @@ Are you tired of browsers bumpy scrolling causing you to lose the sentence while
 This lightweight, portable, manga client fills every inch of your hard earned 34" ultrawide monitor and combines features like background prefetching, night mode, and bookmarks. 
 
 ## Controls
-Once the client connects with MangaEden, use the search bar at the top to search for a manga. 
+Once the client connects with MangaEden, use the search bar at the top to search for a manga or use the open local folder button to load locally. 
 Click on a suggestion bellow the search bar or press enter to highlight the top suggestion.
 Once the manga loads, click a chapter and begin viewing.
 
@@ -20,6 +20,8 @@ Once the manga loads, click a chapter and begin viewing.
 - Fullscreen: F11 or fullscreen button
 - Nightmode: Night mode button. Toggles nightmode.
 - Read Direction: Read Direction button. Toggles left/right reading. 
+- S to go back to search.
+- Esc exits fullscreen or search. 
 
 ## Horizontal viewing experience
 ![alt-text](Examples/Example0.JPG)
