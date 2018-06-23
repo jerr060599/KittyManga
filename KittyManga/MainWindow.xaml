@@ -5,7 +5,8 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:KittyManga"
         mc:Ignorable="d"
-        Title="Kitty Client" Height="800" Width="1200">
+        Title="Kitty Client" Height="800" Width="1200"
+        ShowInTaskbar="False" Visibility="Hidden">
     <Window.CommandBindings>
         <CommandBinding Command="local:MainWindow.ToggleFullscreenCommand" Executed="ToggleFullscreen"/>
         <CommandBinding Command="local:MainWindow.EscCommand" Executed="EscPressed"/>

@@ -19,6 +19,7 @@ namespace KittyManga {
         /// THe name of the local file to search for when loading main index
         /// </summary>
         public string INDEX_FILE = @"MangaIndex.txt";
+        public string COVERS_CACHE_DIR = @"\Covers\";
 
         public MangaAddress this[int i] {
             get { return mainIndex.manga[i]; }
@@ -122,7 +123,33 @@ namespace KittyManga {
         /// <returns>The downloaded image</returns>
         public BitmapImage FetchCover(int i) {
             if (mainIndex.manga[i].im == null) return null;
-            return DownloadImage(API_IMG + (string)mainIndex.manga[i].im);
+            BitmapImage img;
+            string cachePath = AppDomain.CurrentDomain.BaseDirectory + COVERS_CACHE_DIR + (string)mainIndex.manga[i].im;
+            if (File.Exists(cachePath)) {
+                img = new BitmapImage(new Uri(cachePath));
+            }
+            else {
+                img = DownloadImage(API_IMG + (string)mainIndex.manga[i].im);
+                if (img == null) return null;
+                SaveImage(img, cachePath);
+            }
+            img.Freeze();
+            return img;
+        }
+
+        /// <summary>
+        /// Saves an image
+        /// </summary>
+        /// <param name="img"></param>
+        /// <param name="path"></param>
+        public void SaveImage(BitmapImage img, string path) {
+            BitmapEncoder encoder = new PngBitmapEncoder();
+            encoder.Frames.Add(BitmapFrame.Create(img));
+            if (!Directory.Exists(Path.GetDirectoryName(path)))
+                Directory.CreateDirectory(Path.GetDirectoryName(path));
+            using (var fileStream = new FileStream(path, FileMode.Create)) {
+                encoder.Save(fileStream);
+            }
         }
 
         /// <summary>

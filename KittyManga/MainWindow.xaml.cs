@@ -107,6 +107,8 @@ namespace KittyManga {
 
             //Subscribe to exit to save settings
             Application.Current.Exit += OnExit;
+            Visibility = Visibility.Visible;
+            ShowInTaskbar = true;
         }
 
         #region Asynchronous Fetching
@@ -437,7 +439,7 @@ namespace KittyManga {
                         else
                             g.Resources.Add("i", api[updated[i]].i);
                         Viewbox box = (UpdatesGrid.Children[i] as Grid).Children[1] as Viewbox;
-                        (box.Child as TextBlock).Text = api[i].t +
+                        (box.Child as TextBlock).Text = api[updated[i]].t +
                                 "\nUpdated " + new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddSeconds((double)api[updated[i]].ld).ToLocalTime().ToString("MM/dd/yyyy h:mm tt");
                     });
                 }
