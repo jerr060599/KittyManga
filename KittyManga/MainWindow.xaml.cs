@@ -259,8 +259,7 @@ namespace KittyManga {
                         r.m = api.LoadManga(id);
                     else
                         r.m = api.FetchManga(id);
-                    if (r.m.image != null)
-                        r.cover = api.FetchCover(r.m);
+                    r.cover = api.FetchCover(r.m);
                     e.Result = r;
                 }
                 catch (ThreadAbortException) {

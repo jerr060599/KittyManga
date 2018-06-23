@@ -97,7 +97,22 @@ namespace KittyManga {
         /// <param name="m">The manga</param>
         /// <returns>The downloaded image</returns>
         public BitmapImage FetchCover(Manga m) {
-            return DownloadImage(API_IMG + (string)m.image);
+            if (m.image == null) return null;
+            if (m.isLocal)
+                if (m.chapters.Length > 0) {
+                    foreach (var item in Directory.GetFiles((string)m.chapters[0][3])) {
+                        string p = item.ToLower();
+                        if (p.EndsWith(".png") || p.EndsWith(".jpg") || p.EndsWith(".jpeg")) {
+                            var img = new BitmapImage(new Uri(item));
+                            img.Freeze();
+                            return img;
+                        }
+                    }
+                    return null;
+                }
+                else return null;
+            else
+                return DownloadImage(API_IMG + (string)m.image);
         }
 
         /// <summary>
@@ -280,11 +295,6 @@ namespace KittyManga {
             }
         }
 
-        struct LocalNode {
-            public string p;
-            public int depth;
-        }
-
         /// <summary>
         /// Loads a manga from a path and its subfolders
         /// Chapters are laid out based on discovery order the bfs search and their names
@@ -302,40 +312,28 @@ namespace KittyManga {
             m.released = DateTime.Now.Year;
             m.isLocal = true;
 
-            Queue<LocalNode> q = new Queue<LocalNode>();
+            Queue<string> q = new Queue<string>();
             Heap<string> heap = new Heap<string>(string.Compare);
             List<object[]> chapters = new List<object[]>();
-            q.Enqueue(new LocalNode() { p = path, depth = 0 });
-            int curDepth = 0;
+            q.Enqueue(path);
             double time = (DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
 
             //Move through file system to find folders with atleast one image file and sort them according to the rule
             while (q.Count > 0) {
-                LocalNode n = q.Dequeue();
-                //Only sorts by heap if they are of the same depth
-                if (n.depth != curDepth) {
-                    curDepth = n.depth;
-                    //Once the path strings have been sorted by the heap, move them to a list.
-                    foreach (var item in heap)
-                        chapters.Add(new object[] { null, time, Path.GetFileName(item), item });
-                    heap.Clear();
-                }
-
+                string n = q.Dequeue();
                 //Checks for image file
-                foreach (var item in Directory.GetFiles(n.p)) {
+                foreach (var item in Directory.GetFiles(n)) {
                     string p = item.ToLower();
                     if (p.EndsWith(".png") || p.EndsWith(".jpg") || p.EndsWith(".jpeg")) {
-                        heap.Add(n.p);
+                        chapters.Add(new object[] { null, time, Path.GetFileName(n), n });
                         break;
                     }
                 }
-                foreach (var item in Directory.GetDirectories(n.p))
-                    q.Enqueue(new LocalNode() { p = item, depth = n.depth + 1 });
+                string[] paths = Directory.GetDirectories(n);
+                Array.Sort(paths);
+                foreach (var item in paths)
+                    q.Enqueue(item);
             }
-
-            foreach (var item in heap)
-                chapters.Add(new object[] { null, time, Path.GetFileName(item), item });
-            chapters.Reverse();
             m.chapters = chapters.ToArray();
 
             return m;
