@@ -58,17 +58,22 @@ namespace KittyManga {
             else {
                 using (WebClient client = new WebClient()) {
                     //Download from internet
-                    string data = client.DownloadString(API_BASE + @"/list/0/");
-                    mainIndex = JsonConvert.DeserializeObject<AddressInfo>(data);
-                    ProcessIndex();
+                    try {
+                        string data = client.DownloadString(API_BASE + @"/list/0/");
+                        mainIndex = JsonConvert.DeserializeObject<AddressInfo>(data);
+                        ProcessIndex();
 
-                    try {//Try to save it
-                        StreamWriter w = new StreamWriter(File.Open(INDEX_FILE, FileMode.Create));
-                        w.WriteLine(DateTime.Now.ToString());
-                        w.Write(data);
-                        w.Close();
+                        try {//Try to save it
+                            StreamWriter w = new StreamWriter(File.Open(INDEX_FILE, FileMode.Create));
+                            w.WriteLine(DateTime.Now.ToString());
+                            w.Write(data);
+                            w.Close();
+                        }
+                        catch (Exception) { }
                     }
-                    catch (Exception) { }
+                    catch (WebException) {
+                        return;
+                    }
                 }
             }
         }
@@ -309,16 +314,19 @@ namespace KittyManga {
         /// <returns>The manga</returns>
         public Manga FetchManga(string id) {
             using (WebClient client = new WebClient()) {
-                Manga m = JsonConvert.DeserializeObject<Manga>(client.DownloadString(API_BASE + $@"/manga/{id}/"));
-                m.title = System.Net.WebUtility.HtmlDecode(m.title);
-                m.alias = System.Net.WebUtility.HtmlDecode(m.alias);
-                m.description = System.Net.WebUtility.HtmlDecode(m.description);
-                Array.Reverse(m.chapters);
-                for (int i = 0; i < m.chapters.Length; i++)
-                    if (m.chapters[i][0] != null)
-                        m.chapters[i][0] = float.Parse(m.chapters[i][0].ToString());
-                m.id = id;
-                return m;
+                try {
+                    Manga m = JsonConvert.DeserializeObject<Manga>(client.DownloadString(API_BASE + $@"/manga/{id}/"));
+                    m.title = System.Net.WebUtility.HtmlDecode(m.title);
+                    m.alias = System.Net.WebUtility.HtmlDecode(m.alias);
+                    m.description = System.Net.WebUtility.HtmlDecode(m.description);
+                    Array.Reverse(m.chapters);
+                    for (int i = 0; i < m.chapters.Length; i++)
+                        if (m.chapters[i][0] != null)
+                            m.chapters[i][0] = float.Parse(m.chapters[i][0].ToString());
+                    m.id = id;
+                    return m;
+                }
+                catch (WebException) { return null; }
             }
         }
 

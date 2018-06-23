@@ -247,7 +247,7 @@ namespace KittyManga {
 
         //Fetches details for a manga and loads it up on the mangainfopane
         public void AsyncFetchManga(string id, bool local = false) {
-            if (api.mainIndex == null) return;
+            if (!local && api.mainIndex == null) return;
             if (fetchMangaThread != null)
                 fetchMangaThread.Abort();
             fetchMangaThread = null;
@@ -261,6 +261,11 @@ namespace KittyManga {
                         r.m = api.LoadManga(id);
                     else
                         r.m = api.FetchManga(id);
+                    if (r.m == null) {
+                        fetchMangaThread = null;
+                        e.Cancel = true;
+                        return;
+                    }
                     r.cover = api.FetchCover(r.m);
                     e.Result = r;
                 }
@@ -420,6 +425,7 @@ namespace KittyManga {
 
         //Fetches the update panel covers
         public void AsyncFetchUpdates() {
+            if (api.mainIndex == null) return;
             if (fetchUpdateThread != null)
                 return;
             fetchUpdateThread = new Thread(() => {//Get all the updates and download their covers
