@@ -145,6 +145,26 @@ namespace KittyManga {
         }
 
         /// <summary>
+        /// Load a chapter from a local path
+        /// </summary>
+        /// <param name="path">The path</param>
+        /// <returns>The loaded images</returns>
+        public BitmapImage[] LoadChapter(Manga m, int index) {
+            List<BitmapImage> imgs = new List<BitmapImage>();
+            string[] files = Directory.GetFiles((string)m.chapters[index][3]);
+            Array.Sort(files);
+            foreach (var item in files) {
+                string p = item.ToLower();
+                if (p.EndsWith(".png") || p.EndsWith(".jpg") || p.EndsWith(".jpeg")) {
+                    BitmapImage img = new BitmapImage(new Uri(p));
+                    img.Freeze();
+                    imgs.Add(img);
+                }
+            }
+            return imgs.ToArray();
+        }
+
+        /// <summary>
         /// Fetches multiple images through multiple connections simultaneously
         /// </summary>
         /// <param name="urls">A list of urls to download from</param>
@@ -258,6 +278,67 @@ namespace KittyManga {
                 m.id = id;
                 return m;
             }
+        }
+
+        struct LocalNode {
+            public string p;
+            public int depth;
+        }
+
+        /// <summary>
+        /// Loads a manga from a path and its subfolders
+        /// Chapters are laid out based on discovery order the bfs search and their names
+        /// Chapters discovered first will always come first
+        /// If the discoervy depth is the same, then they are sorted by name
+        /// </summary>
+        /// <param name="path">The local path on disk</param>
+        /// <returns></returns>
+        public Manga LoadManga(string path) {
+            Manga m = new Manga();
+            m.title = Path.GetFileName(path);
+            m.author = "Meow!";
+            m.categories = new string[] { "Local" };
+            m.description = "Local files: \n" + path + "\n";
+            m.released = DateTime.Now.Year;
+            m.isLocal = true;
+
+            Queue<LocalNode> q = new Queue<LocalNode>();
+            Heap<string> heap = new Heap<string>(string.Compare);
+            List<object[]> chapters = new List<object[]>();
+            q.Enqueue(new LocalNode() { p = path, depth = 0 });
+            int curDepth = 0;
+            double time = (DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
+
+            //Move through file system to find folders with atleast one image file and sort them according to the rule
+            while (q.Count > 0) {
+                LocalNode n = q.Dequeue();
+                //Only sorts by heap if they are of the same depth
+                if (n.depth != curDepth) {
+                    curDepth = n.depth;
+                    //Once the path strings have been sorted by the heap, move them to a list.
+                    foreach (var item in heap)
+                        chapters.Add(new object[] { null, time, Path.GetFileName(item), item });
+                    heap.Clear();
+                }
+
+                //Checks for image file
+                foreach (var item in Directory.GetFiles(n.p)) {
+                    string p = item.ToLower();
+                    if (p.EndsWith(".png") || p.EndsWith(".jpg") || p.EndsWith(".jpeg")) {
+                        heap.Add(n.p);
+                        break;
+                    }
+                }
+                foreach (var item in Directory.GetDirectories(n.p))
+                    q.Enqueue(new LocalNode() { p = item, depth = n.depth + 1 });
+            }
+
+            foreach (var item in heap)
+                chapters.Add(new object[] { null, time, Path.GetFileName(item), item });
+            chapters.Reverse();
+            m.chapters = chapters.ToArray();
+
+            return m;
         }
 
         /// <summary>
@@ -389,11 +470,12 @@ namespace KittyManga {
         public object[][] chapters;
         public double created;
         public string description;
-        public int hits;
+        public int hits = 1;
         public object image;
         public string last_chapter_date;
         public object released;
         public string id;
+        public bool isLocal = false;
     }
 
     public class Chapter {

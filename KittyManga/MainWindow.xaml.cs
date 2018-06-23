@@ -14,8 +14,7 @@ using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
+using Microsoft.WindowsAPICodePack.Dialogs;
 using System.Windows.Threading;
 using System.Xml.Linq;
 using System.Configuration;
@@ -42,6 +41,7 @@ namespace KittyManga {
         BitmapImage[] prefetchedData = null;
         bool loadPrefetchOnComplete = false;
         bool hasPrev, hasNext;
+        CommonOpenFileDialog FileDialog;
 
         Dictionary<string, MangaBookmark> bookmarks;
         bool nightmode = false;
@@ -49,6 +49,9 @@ namespace KittyManga {
         public MainWindow() {
             InitializeComponent();
             AppDomain.CurrentDomain.UnhandledException += WriteWillBeforeCrash;
+            FileDialog = new CommonOpenFileDialog();
+            FileDialog.IsFolderPicker = true;
+            FileDialog.Multiselect = false;
             SearchPane.Visibility = DisplayPane.Visibility = Visibility.Hidden;
             this.DataContext = this;
             AsyncInit();
@@ -169,7 +172,10 @@ namespace KittyManga {
             ImagePane.Children.Clear();
             BackgroundWorker worker = new BackgroundWorker();
             worker.DoWork += (s, e) => {//Fetch
-                e.Result = api.FetchChapter(e.Argument as string, worker);
+                if (m.isLocal)
+                    e.Result = api.LoadChapter(m, chIndex);
+                else
+                    e.Result = api.FetchChapter(e.Argument as string, worker);
             };
             worker.WorkerReportsProgress = true;
             worker.ProgressChanged += (s, e) => {
@@ -198,7 +204,10 @@ namespace KittyManga {
             worker.DoWork += (sender, e) => {
                 try {
                     mangaPrefetchThread = Thread.CurrentThread;
-                    e.Result = api.FetchChapter(e.Argument as string, worker);
+                    if (m.isLocal)
+                        e.Result = api.LoadChapter(m, chIndex);
+                    else
+                        e.Result = api.FetchChapter(e.Argument as string, worker);
                 }
                 catch (ThreadAbortException) {
                     worker.CancelAsync();
@@ -235,7 +244,7 @@ namespace KittyManga {
         }
 
         //Fetches details for a manga and loads it up on the mangainfopane
-        public void AsyncFetchManga(string id) {
+        public void AsyncFetchManga(string id, bool local = false) {
             if (api.mainIndex == null) return;
             if (fetchMangaThread != null)
                 fetchMangaThread.Abort();
@@ -246,7 +255,10 @@ namespace KittyManga {
                 try {
                     fetchMangaThread = Thread.CurrentThread;
                     MangaImage r = new MangaImage();
-                    r.m = api.FetchManga(id);
+                    if (local)
+                        r.m = api.LoadManga(id);
+                    else
+                        r.m = api.FetchManga(id);
                     if (r.m.image != null)
                         r.cover = api.FetchCover(r.m);
                     e.Result = r;
@@ -296,7 +308,7 @@ namespace KittyManga {
                     };
                     ChGrid.Children.Add(butt);
                 }//Update button background according to bookmark
-                if (bookmarks.ContainsKey(r.m.id) && ChGrid.Children.Count > bookmarks[r.m.id].lastChapter)
+                if (!local && bookmarks.ContainsKey(r.m.id) && ChGrid.Children.Count > bookmarks[r.m.id].lastChapter)
                     (ChGrid.Children[bookmarks[r.m.id].lastChapter] as Button).Background = Brushes.DarkGoldenrod;
                 MangaInfoPane.Visibility = Visibility.Visible;
                 MangaInfoPane.Height = double.NaN;
@@ -530,14 +542,15 @@ namespace KittyManga {
             prefetchedData = null;
             loadPrefetchOnComplete = false;
 
-            if (bookmarks.ContainsKey(m.id)) {//Update bookmark buttons
-                if (curManga != m && ChGrid.Children.Count > bookmarks[m.id].lastChapter)
-                    (ChGrid.Children[bookmarks[m.id].lastChapter] as Button).Background = null;
-                bookmarks[m.id].lastChapter = chIndex;
-                bookmarks[m.id].lastRead = DateTime.UtcNow;
-            }
-            else
-                bookmarks.Add(m.id, new MangaBookmark() { id = m.id, lastChapter = chIndex, lastRead = DateTime.UtcNow });
+            if (!m.isLocal)
+                if (bookmarks.ContainsKey(m.id)) {//Update bookmark buttons
+                    if (curManga != m && ChGrid.Children.Count > bookmarks[m.id].lastChapter)
+                        (ChGrid.Children[bookmarks[m.id].lastChapter] as Button).Background = null;
+                    bookmarks[m.id].lastChapter = chIndex;
+                    bookmarks[m.id].lastRead = DateTime.UtcNow;
+                }
+                else
+                    bookmarks.Add(m.id, new MangaBookmark() { id = m.id, lastChapter = chIndex, lastRead = DateTime.UtcNow });
 
             Binding binding = new Binding();
             binding.Path = new PropertyPath("ViewportWidth");
@@ -594,6 +607,12 @@ namespace KittyManga {
             set {
                 BarProgessText.Text = ProgessText.Text = value;
             }
+        }
+
+        public void OpenFileDialog(object sender, RoutedEventArgs e) {
+            var result = FileDialog.ShowDialog();
+            if (result == CommonFileDialogResult.Ok && !string.IsNullOrWhiteSpace(FileDialog.FileName))
+                AsyncFetchManga(FileDialog.FileName, true);
         }
 
         public void ToggleSearchPane(object sender, RoutedEventArgs e) {

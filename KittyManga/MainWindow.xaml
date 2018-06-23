@@ -140,8 +140,11 @@
                     </Image.RenderTransform>
                 </Image>
 
-                <Button Click="ToggleSearchPane" HorizontalAlignment="Right" VerticalAlignment="Top" Height="18" Width="18" Margin="10" Background="Transparent" Opacity="0.9">
+                <Button Click="ToggleSearchPane" HorizontalAlignment="Right" VerticalAlignment="Top" Height="22" Width="22" Margin="10" Background="Transparent" Opacity="0.9">
                     <Image Source="pack://application:,,,/Resources/closeIcon.png"/>
+                </Button>
+                <Button Click="OpenFileDialog" HorizontalAlignment="Right" VerticalAlignment="Top" Height="22" Width="22" Margin="10,10,45,10" Background="Transparent" Opacity="0.9">
+                    <Image Source="pack://application:,,,/Resources/openIcon.png"/>
                 </Button>
                 <StackPanel>
                     <Border Margin="20,60,20,5" Background="White" Height="30" CornerRadius="10" BorderThickness="1" BorderBrush="Gray">
