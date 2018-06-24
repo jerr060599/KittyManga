@@ -308,7 +308,7 @@ namespace KittyManga {
                     butt.SetValue(Button.HorizontalAlignmentProperty, HorizontalAlignment.Left);
                     string n = api.GetChapterName(r.m, i);
                     butt.Content = n;
-                    butt.ToolTip = n + " " + new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddSeconds((double)r.m.chapters[i][1]).ToLocalTime().ToString();
+                    butt.ToolTip = n + " " + ((double)r.m.chapters[i][1]).ToDatetime().ToString();
                     Grid.SetColumn(butt, i % NUM_CH_COL);
                     Grid.SetRow(butt, i / NUM_CH_COL);
                     butt.Margin = thicc;
@@ -432,7 +432,7 @@ namespace KittyManga {
                 //Get feed udpates and their covers
                 Heap<MangaAddress> dateHeap = new Heap<MangaAddress>((a, b) => Math.Sign((double)a.ld - (double)b.ld));//Keeps track of last updated date
                 foreach (var item in bookmarks) {
-                    if (api.ContainsManga(item.Key) && api[item.Key].ld != null)
+                    if (api.ContainsManga(item.Key) && api[item.Key].ld != null && (double)api[item.Key].ld > item.Value.lastRead.ToUnixTime())
                         if (dateHeap.Count < NUM_RECENT_FEED_COL)
                             dateHeap.Add(api[item.Key]);
                         else if ((double)dateHeap.Min.ld < (double)api[item.Key].ld) {
@@ -451,11 +451,13 @@ namespace KittyManga {
                             g.Resources.Add("i", a.i);
                         Image img = g.Children[0] as Image;
                         img.Source = cover;
-                        ((g.Children[1] as Viewbox).Child as TextBlock).Text = a.t + $"\nUpdated {new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddSeconds((double)a.ld).ToLocalTime().ToString("MM/dd/yyyy h:mm tt")}";
+                        ((g.Children[1] as Viewbox).Child as TextBlock).Text = a.t + $"\nUpdated {((double)a.ld).ToDatetime().ToString("MM/dd/yyyy h:mm tt")}";
                         g.Visibility = Visibility.Visible;
                     });
                     i++;
                 }
+                for (; i < NUM_RECENT_FEED_COL; i++)
+                    Application.Current.Dispatcher.Invoke(() => { (FeedGrid.Children[i] as Grid).Visibility = Visibility.Hidden; });
 
                 //Get all the updates and download their covers
                 int[] updated = api.FetchUpdated(NUM_UPDATES_ROW * NUM_UPDATES_COL);
@@ -471,7 +473,7 @@ namespace KittyManga {
                             g.Resources.Add("i", api[updated[i]].i);
                         Viewbox box = (UpdatesGrid.Children[i] as Grid).Children[1] as Viewbox;
                         (box.Child as TextBlock).Text = api[updated[i]].t +
-                                "\nUpdated " + new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddSeconds((double)api[updated[i]].ld).ToLocalTime().ToString("MM/dd/yyyy h:mm tt");
+                                "\nUpdated " + ((double)api[updated[i]].ld).ToDatetime().ToString("MM/dd/yyyy h:mm tt");
                     });
                 }
                 fetchUpdateThread = null;

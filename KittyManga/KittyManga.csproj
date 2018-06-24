@@ -72,6 +72,7 @@
     <Compile Include="InvertEffect.cs" />
     <Compile Include="MangaBookmark.cs" />
     <Compile Include="SmoothScrollViewer.cs" />
+    <Compile Include="Util.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>

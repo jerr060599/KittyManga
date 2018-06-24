@@ -396,7 +396,7 @@ namespace KittyManga {
             Heap<string> heap = new Heap<string>(string.Compare);
             List<object[]> chapters = new List<object[]>();
             q.Enqueue(path);
-            double time = (DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
+            double time = DateTime.UtcNow.ToUnixTime();
 
             //Move through file system to find folders with atleast one image file and sort them according to the rule
             while (q.Count > 0) {
