@@ -254,7 +254,7 @@
                         </WrapPanel>
                         <Grid Name="UpdatesGrid" Margin="50,0,50,0" Background="Transparent" Cursor="Arrow"/>
                     </StackPanel>
-                    <TextBlock xml:space="preserve" Margin="0,40,0,40" Foreground="White" FontSize="14" FontFamily="Segoe UI Light" TextAlignment="Center">KittyManga created by Chi Cheng Hsu 2018, rev.14&#xa;Images pulled from MangaEden</TextBlock>
+                    <TextBlock xml:space="preserve" Margin="0,40,0,40" Foreground="White" FontSize="14" FontFamily="Segoe UI Light" TextAlignment="Center">KittyManga created by Chi Cheng Hsu 2018, rev.15&#xa;Images pulled from MangaEden</TextBlock>
                 </StackPanel>
             </Grid>
         </ScrollViewer>
