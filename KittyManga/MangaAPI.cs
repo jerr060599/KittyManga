@@ -21,6 +21,8 @@ namespace KittyManga {
         public string INDEX_FILE = @"MangaIndex.txt";
         public string COVERS_CACHE_DIR = @"\Covers\";
 
+        object fileIOLock = new object();
+
         public MangaAddress this[int i] {
             get { return mainIndex.manga[i]; }
         }
@@ -144,15 +146,14 @@ namespace KittyManga {
             else {
                 BitmapImage img;
                 string cachePath = $@"{AppDomain.CurrentDomain.BaseDirectory}{COVERS_CACHE_DIR}{(string)m.id}.png";
-                if (File.Exists(cachePath)) {
-                    img = new BitmapImage(new Uri(cachePath));
-                }
-                else {
-                    if (m.image == null)
-                        return null;
-                    img = DownloadImage(API_IMG + (string)m.image);
-                    if (img == null) return null;
-                    SaveImage(img, cachePath);
+                lock (fileIOLock) {
+                    if (File.Exists(cachePath))
+                        img = new BitmapImage(new Uri(cachePath));
+                    else {
+                        img = DownloadImage(API_IMG + (string)m.image);
+                        if (img == null) return null;
+                        SaveImage(img, cachePath);
+                    }
                 }
                 img.Freeze();
                 return img;
@@ -172,13 +173,14 @@ namespace KittyManga {
             if (mainIndex.manga[i].im == null) return null;
             BitmapImage img;
             string cachePath = $@"{AppDomain.CurrentDomain.BaseDirectory}{COVERS_CACHE_DIR}{(string)mainIndex.manga[i].i}.png";
-            if (File.Exists(cachePath)) {
-                img = new BitmapImage(new Uri(cachePath));
-            }
-            else {
-                img = DownloadImage(API_IMG + (string)mainIndex.manga[i].im);
-                if (img == null) return null;
-                SaveImage(img, cachePath);
+            lock (fileIOLock) {
+                if (File.Exists(cachePath))
+                    img = new BitmapImage(new Uri(cachePath));
+                else {
+                    img = DownloadImage(API_IMG + (string)mainIndex.manga[i].im);
+                    if (img == null) return null;
+                    SaveImage(img, cachePath);
+                }
             }
             img.Freeze();
             return img;
@@ -197,6 +199,7 @@ namespace KittyManga {
             using (var fileStream = new FileStream(path, FileMode.Create)) {
                 encoder.Save(fileStream);
             }
+
         }
 
         /// <summary>
