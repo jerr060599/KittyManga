@@ -29,7 +29,7 @@ namespace KittyManga {
         public const int NUM_UPDATES_COL = 5;
         public const int NUM_UPDATES_ROW = 20;
 
-        public const string USER_DATA_FILE = "UserData.xml";
+        public const string USER_DATA_FILE = "Meow.meow";
         MangaAPI api = new MangaAPI();
         Thread searchThread = null, fetchMangaThread = null, mangaPrefetchThread = null, fetchUpdateThread = null, fetchRecentThread = null;
 
@@ -338,8 +338,8 @@ namespace KittyManga {
             worker.DoWork += (sender, e) => {
                 api.FetchIndex(true);//Fetches the mainIndex from a file or the internet if the cached file is too old
                 try {//Try to load the user configs and bookmarks
-                    using (Stream f = File.OpenRead(USER_DATA_FILE)) {
-                        XDocument doc = XDocument.Load(f);
+                    using (StreamReader f = new StreamReader(File.OpenRead(USER_DATA_FILE))) {
+                        XDocument doc = XDocument.Parse(Meow.FromMeow(f.ReadToEnd()));
                         bookmarks = doc.Descendants("UserData").Descendants("bookmarks").ToDictionary(x => {
                             if (x.Attribute("k") == null)
                                 return "";
@@ -805,7 +805,11 @@ namespace KittyManga {
                      );
                 root.Add(xElem);
                 doc.Add(root);
-                doc.Save(USER_DATA_FILE);
+
+                using (StreamWriter s = new StreamWriter(File.Create(USER_DATA_FILE))) {
+                    s.Write(Meow.ToMeow(doc.ToString(SaveOptions.DisableFormatting)));
+                    s.Close();
+                }
             }).Start();
         }
 
