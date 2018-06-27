@@ -56,7 +56,7 @@ namespace KittyManga {
                 for (int j = 0; j < bytesPerMeow; j++) {
                     byte b = 0x0;
                     for (int k = 0; k < 8; k++) {
-                        if (i == data.Length)
+                        if (i >= data.Length)
                             return arr.ToArray();
                         char c = data[i++];
                         if (c == ' ') {

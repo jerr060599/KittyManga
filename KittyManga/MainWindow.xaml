@@ -40,7 +40,7 @@
         <TextBlock Name="ProgessText" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White" FontFamily="Segoe UI Semibold" FontStyle="Italic">Connecting...</TextBlock>
 
         <Grid Name="DisplayPane">
-            <local:SmoothScrollViewer x:Name="DisplayScroll" KeyDown="ShowSearchPane">
+            <local:SmoothScrollViewer x:Name="DisplayScroll" KeyDown="ShowSearchPane" HorizontalScrollBarVisibility="Hidden" ScrollChanged="DisplayScrollChanged">
                 <Grid MaxHeight="{Binding Path=ViewportHeight, ElementName=DisplayScroll}" Margin="0">
                     <WrapPanel Name="ImagePane"/>
                     <Button Name="LeftButt" Click="LeftButtSlapped" Height="50" Width="50" HorizontalAlignment="Left" Visibility="Hidden">
@@ -66,7 +66,7 @@
                     </Image.RenderTransform>
                 </Image>
             </Grid>
-            <Grid Name="BarTrigger" Height="150" Width="800" VerticalAlignment="Top" MouseDown="ZoomStart" Background="Transparent">
+            <Grid Name="BarTrigger" Height="150" Width="1000" VerticalAlignment="Top" MouseDown="ZoomStart" Background="Transparent" PreviewMouseWheel="ScrollBypass">
                 <Grid.Style>
                     <Style TargetType="Grid">
                         <Style.Triggers>
@@ -89,21 +89,47 @@
                         </Style.Triggers>
                     </Style>
                 </Grid.Style>
-                <Grid Name="StatusBar" Margin="0,20,0,0" Background="Transparent" Height="30" Width="700" VerticalAlignment="Top">
+                <Grid Name="StatusBar" Margin="0,20,0,0" Background="Transparent" Height="30" Width="900" VerticalAlignment="Top">
 
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="3*"/>
+                        <ColumnDefinition Width="4*"/>
                         <ColumnDefinition Width="1.4*"/>
                         <ColumnDefinition Width="2*"/>
                     </Grid.ColumnDefinitions>
                     <Grid Grid.ColumnSpan="3">
-                        <Border Name="barMask" Background="#CC000000" Panel.ZIndex="-10" CornerRadius="10"/>
+                        <Border Name="barMask" Background="#CC000000" CornerRadius="10"/>
                     </Grid>
-                    <Viewbox Margin="15,0,5,4" Grid.Column="0">
-                        <TextBlock Name="BarChName" Foreground="White">
-                    Cat, Ch.123 (Kittens)
-                        </TextBlock>
-                    </Viewbox>
+                    <Grid Grid.Column="0" Background="Transparent" MouseLeftButtonDown="ScrollIndicatorDown" MouseMove="ScrollIndicatorMove">
+                        <Grid.Resources>
+                            <Style TargetType="Viewbox">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsMouseOver, RelativeSource={RelativeSource Mode=FindAncestor, AncestorLevel=1,AncestorType=Grid}}" Value="True">
+                                        <DataTrigger.EnterActions>
+                                            <BeginStoryboard>
+                                                <Storyboard>
+                                                    <DoubleAnimation Duration="0:0:0.200" To="0" Storyboard.TargetProperty="Opacity"/>
+                                                </Storyboard>
+                                            </BeginStoryboard>
+                                        </DataTrigger.EnterActions>
+                                        <DataTrigger.ExitActions>
+                                            <BeginStoryboard>
+                                                <Storyboard>
+                                                    <DoubleAnimation Duration="0:0:0.200" To="1" Storyboard.TargetProperty="Opacity"/>
+                                                </Storyboard>
+                                            </BeginStoryboard>
+                                        </DataTrigger.ExitActions>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Grid.Resources>
+                        <Border Name="ScrollIndicator" Background="#66FFFFFF" CornerRadius="7" Margin="9,4,5,4" HorizontalAlignment="Left"></Border>
+                        <Viewbox Margin="15,0,5,4" IsHitTestVisible="false">
+                            <TextBlock Name="BarChName" Foreground="White" IsHitTestVisible="false">
+                                Meow!
+                            </TextBlock>
+                        </Viewbox>
+                    </Grid>
+
                     <Grid Grid.Column="1" Margin="5,0,5,0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="1*"/>
@@ -131,7 +157,7 @@
             </Grid>
         </Grid>
 
-        <ScrollViewer Name="SearchPane" VerticalScrollBarVisibility="Auto">
+        <ScrollViewer Name="SearchPane" VerticalScrollBarVisibility="Auto" Visibility="Hidden">
             <Grid Background="#FF252526" Margin="80,0,80,0">
 
                 <Image Source="pack://application:,,,/Resources/shadow_side.png" Width="15" Stretch="Fill" HorizontalAlignment="Left" Margin="-15,0,0,0" Opacity="0.4"/>

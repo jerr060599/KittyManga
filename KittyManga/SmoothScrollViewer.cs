@@ -67,7 +67,7 @@ namespace KittyManga {
             PreviewKeyUp += OnPreviewKeyUp;
             Loaded += (s, e) => { ticker.Start(); };
             Unloaded += (s, e) => { ticker.Stop(); };
-            SetVerticalScrollBarVisibility(this, ScrollBarVisibility.Hidden);
+            SetVerticalScrollBarVisibility(this, ScrollBarVisibility.Disabled);
             SetHorizontalScrollBarVisibility(this, ScrollBarVisibility.Auto);
         }
 

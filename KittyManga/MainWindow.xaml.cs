@@ -701,6 +701,7 @@ namespace KittyManga {
                     DisplayScroll.InvertMouseWheel = false;
                     LeftButt.ToolTip = "Prev";
                     RightButt.ToolTip = prefetchedData == null ? "Next (Fetching...)" : "Next";
+                    ScrollIndicator.HorizontalAlignment = HorizontalAlignment.Left;
                 }
                 else {
                     LeftButt.Visibility = hasNext ? Visibility.Visible : Visibility.Hidden;
@@ -708,6 +709,7 @@ namespace KittyManga {
                     DisplayScroll.InvertMouseWheel = true;
                     RightButt.ToolTip = "Prev";
                     LeftButt.ToolTip = prefetchedData == null ? "Next (Fetching...)" : "Next";
+                    ScrollIndicator.HorizontalAlignment = HorizontalAlignment.Right;
                 }
             }
             get {
@@ -750,15 +752,33 @@ namespace KittyManga {
             AddUpdateAppSettings("LeftToRight", LeftToRight.ToString());
         }
 
-        public void ToggleFullscreen(object sender, ExecutedRoutedEventArgs e) {
-            Fullscreen = !Fullscreen;
-        }
+        public void ToggleFullscreen(object sender, ExecutedRoutedEventArgs e) { Fullscreen = !Fullscreen; }
 
         public void EscPressed(object sender, ExecutedRoutedEventArgs e) {
             if (SearchPane.Visibility == Visibility.Visible)
                 SearchPane.Visibility = Visibility.Hidden;
             else if (Fullscreen)
                 Fullscreen = false;
+        }
+
+        public void ScrollBypass(object sender, MouseWheelEventArgs args) { DisplayScroll.RaiseEvent(args); args.Handled = true; }
+
+        public void DisplayScrollChanged(object sender, ScrollChangedEventArgs args) {
+            double m = (ScrollIndicator.Parent as FrameworkElement).ActualWidth - ScrollIndicator.Margin.Left - ScrollIndicator.Margin.Right;
+            if (LeftToRight)
+                ScrollIndicator.Width = DisplayScroll.HorizontalOffset / DisplayScroll.ScrollableWidth * m;
+            else
+                ScrollIndicator.Width = (1 - DisplayScroll.HorizontalOffset / DisplayScroll.ScrollableWidth) * m;
+        }
+
+        public void ScrollIndicatorDown(object sender, MouseButtonEventArgs args) { ProcessIndicatorInput(args.GetPosition(sender as IInputElement).X); }
+
+        public void ScrollIndicatorMove(object sender, MouseEventArgs args) { if (args.LeftButton == MouseButtonState.Pressed) ProcessIndicatorInput(args.GetPosition(sender as IInputElement).X); }
+
+        public void ProcessIndicatorInput(double x) {
+            x -= ScrollIndicator.Margin.Left;
+            x = x / ((ScrollIndicator.Parent as FrameworkElement).ActualWidth - ScrollIndicator.Margin.Left - ScrollIndicator.Margin.Right);
+            DisplayScroll.ScrollToHorizontalOffset(x * DisplayScroll.ScrollableWidth);
         }
 
         #endregion
