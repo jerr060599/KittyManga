@@ -393,7 +393,6 @@ namespace KittyManga {
             m.isLocal = true;
 
             Queue<string> q = new Queue<string>();
-            Heap<string> heap = new Heap<string>(string.Compare);
             List<object[]> chapters = new List<object[]>();
             q.Enqueue(path);
             double time = DateTime.UtcNow.ToUnixTime();
@@ -456,10 +455,8 @@ namespace KittyManga {
                 if (heap.Count < top) {
                     heap.Add(new MangaMatch() { s = score, index = i });
                 }
-                else if (heap.Min.s < score) {
-                    heap.RemoveMin();
-                    heap.Add(new MangaMatch() { s = score, index = i });
-                }
+                else if (heap.Peek().s < score)
+                    heap.PollAdd(new MangaMatch() { s = score, index = i });
             }
             return heap.ToList();
         }
@@ -476,12 +473,10 @@ namespace KittyManga {
                     continue;
                 if (heap.Count < top)
                     heap.Add(new KeyValuePair<int, double>(i, (double)mainIndex.manga[i].ld));
-                else if (heap.Min.Value < (double)mainIndex.manga[i].ld) {
-                    heap.RemoveMin();
-                    heap.Add(new KeyValuePair<int, double>(i, (double)mainIndex.manga[i].ld));
-                }
+                else if (heap.Peek().Value < (double)mainIndex.manga[i].ld)
+                    heap.PollAdd(new KeyValuePair<int, double>(i, (double)mainIndex.manga[i].ld));
             }
-            return heap.Select<KeyValuePair<int, double>, int>(x => x.Key).ToArray();
+            return heap.ToArray().Select<KeyValuePair<int, double>, int>(x => x.Key).ToArray();
         }
 
         int[,] dpMat = new int[400, 400];

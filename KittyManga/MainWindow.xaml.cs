@@ -371,13 +371,11 @@ namespace KittyManga {
                     if (item.Key == "") continue;
                     if (readHeap.Count < NUM_RECENT_FEED_COL)
                         readHeap.Add(item.Value);
-                    else if (readHeap.Min.lastRead < item.Value.lastRead) {
-                        readHeap.RemoveMin();
-                        readHeap.Add(item.Value);
-                    }
+                    else if (readHeap.Peek().lastRead < item.Value.lastRead)
+                        readHeap.PollAdd(item.Value);
                 }
                 int i = 0;
-                foreach (var item in readHeap) {
+                foreach (var item in readHeap.ToArray()) {
                     if (!api.ContainsManga(item.id))
                         continue;
                     MangaAddress a = api[item.id];
@@ -435,13 +433,11 @@ namespace KittyManga {
                     if (api.ContainsManga(item.Key) && api[item.Key].ld != null && (double)api[item.Key].ld > item.Value.lastRead.ToUnixTime())
                         if (dateHeap.Count < NUM_RECENT_FEED_COL)
                             dateHeap.Add(api[item.Key]);
-                        else if ((double)dateHeap.Min.ld < (double)api[item.Key].ld) {
-                            dateHeap.RemoveMin();
-                            dateHeap.Add(api[item.Key]);
-                        }
+                        else if ((double)dateHeap.Peek().ld < (double)api[item.Key].ld)
+                            dateHeap.PollAdd(api[item.Key]);
                 }
                 int i = 0;
-                foreach (var a in dateHeap) {
+                foreach (var a in dateHeap.ToArray()) {
                     BitmapImage cover = api.FetchCover(a.i);
                     Application.Current.Dispatcher.Invoke(() => {//Update UI
                         Grid g = FeedGrid.Children[i] as Grid;
