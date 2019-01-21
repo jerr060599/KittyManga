@@ -392,7 +392,7 @@ namespace KittyManga {
             m.released = DateTime.Now.Year;
             m.isLocal = true;
 
-            Queue<string> q = new Queue<string>();
+            var q = new Queue<string>();
             List<object[]> chapters = new List<object[]>();
             q.Enqueue(path);
             double time = DateTime.UtcNow.ToUnixTime();
@@ -409,13 +409,44 @@ namespace KittyManga {
                     }
                 }
                 string[] paths = Directory.GetDirectories(n);
-                Array.Sort(paths);
+                Array.Sort(paths, (a, b) => {
+                    int ida, idb;
+                    int ai = Math.Max(0, a.LastIndexOf(Path.DirectorySeparatorChar));
+                    int bi = Math.Max(0, b.LastIndexOf(Path.DirectorySeparatorChar));
+
+                    while ((ida = ParseID(a, ref ai)) != -1 && (idb = ParseID(b, ref bi)) != -1)
+                        if (ida > idb) return 1;
+                        else if (ida < idb) return -1;
+
+                    ai = Math.Min(a.Length, b.Length);
+                    for (int i = 0; i < ai; i++)
+                        if (a[i] > b[i]) return 1;
+                        else if (a[i] < b[i]) return -1;
+
+                    if (a.Length > b.Length) return 1;
+                    if (a.Length < b.Length) return -1;
+
+                    return 0;
+                });
                 foreach (var item in paths)
                     q.Enqueue(item);
             }
             m.chapters = chapters.ToArray();
 
             return m;
+        }
+
+        public static int ParseID(string str, ref int i) {
+            if (i == str.Length)
+                return -1;
+            int o = 0;
+            for (; i < str.Length && !isNum(str[i]); i++) ;
+            for (; i < str.Length && isNum(str[i]); i++) o = 10 * o + str[i] - '0';
+            return o;
+        }
+
+        public static bool isNum(char c) {
+            return c >= '0' && c <= '9';
         }
 
         /// <summary>
